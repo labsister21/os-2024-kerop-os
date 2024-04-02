@@ -94,7 +94,6 @@ void keyboard_isr(void) {
     // TODO : Implement scancode processing
     
     
-
     static bool isShift = false;
     static bool isCapsLock = false;
     
@@ -184,5 +183,5 @@ void keyboard_state_deactivate(void){
 }
 void get_keyboard_buffer(char* buff){
   *buff = keyboard_state.keyboard_buffer;
-  keyboard_state.keyboard_buffer = '\0';
+  keyboard_state.keyboard_buffer = 0;
 }
