@@ -28,6 +28,7 @@ extern struct IDTR _idt_idtr;
  * @param _r_bit_2    Reserved for idtgate type, bit length: 3
  * @param gate_32     Is this gate size 32-bit? If not then its 16-bit gate
  * @param _r_bit_3    Reserved for idtgate type, bit length: 1
+ * @param offset_high
  * ...
  */
 struct IDTGate
@@ -35,16 +36,17 @@ struct IDTGate
     // First 32-bit (Bit 0 to 31)
     // TODO : Implement (Done)
     uint16_t offset_low;
-    
-    uint16_t segment;
+
+    uint16_t segment : 16;
     uint8_t _reserved : 5;
     uint8_t _r_bit_1 : 3;
-    uint8_t dpl : 2;
     uint8_t _r_bit_2 : 3;
-    uint8_t _r_bit_3 : 1;
     uint8_t gate_32 : 1;
+    uint8_t _r_bit_3 : 1;
+    uint8_t dpl : 2;
+
     uint8_t valid_bit : 1;
-    uint16_t offset_high;
+    uint16_t offset_high : 16;
 
 } __attribute__((packed));
 

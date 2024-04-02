@@ -7,7 +7,6 @@
 #include "header/cpu/idt.h"
 #include "header/cpu/interrupt.h"
 
-
 #include <stdbool.h>
 
 // void kernel_setup(void)
@@ -27,12 +26,14 @@
 //     b += 1;
 // }
 
-void kernel_setup(void) {
+void kernel_setup(void)
+{
     load_gdt(&_gdt_gdtr);
     pic_remap();
     initialize_idt();
     framebuffer_clear();
     framebuffer_set_cursor(0, 0);
     __asm__("int $0x4");
-    while (true);
+    while (true)
+        ;
 }
