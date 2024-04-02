@@ -6,6 +6,8 @@
 #include "header/stdlib/string.h"
 #include "header/cpu/idt.h"
 #include "header/cpu/interrupt.h"
+#include "header/filesystem/fat32.h"
+#include "header/driver/disk.h"
 
 #include <stdbool.h>
 
@@ -26,6 +28,17 @@
 //     b += 1;
 // }
 
+// void kernel_setup(void)
+// {
+//     load_gdt(&_gdt_gdtr);
+//     pic_remap();
+//     initialize_idt();
+//     framebuffer_clear();
+//     framebuffer_set_cursor(0, 0);
+//     __asm__("int $0x4");
+//     while (true)
+//         ;
+// }
 void kernel_setup(void)
 {
     load_gdt(&_gdt_gdtr);
@@ -33,7 +46,11 @@ void kernel_setup(void)
     initialize_idt();
     framebuffer_clear();
     framebuffer_set_cursor(0, 0);
-    __asm__("int $0x4");
+
+    struct BlockBuffer b;
+    for (int i = 0; i < 512; i++)
+        b.buf[i] = i;
+    write_blocks(&b, 17, 1);
     while (true)
         ;
 }
