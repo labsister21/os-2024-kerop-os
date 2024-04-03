@@ -29,17 +29,17 @@
 //     b += 1;
 // }
 
-void kernel_setup(void)
-{
-    load_gdt(&_gdt_gdtr);
-    pic_remap();
-    initialize_idt();
-    framebuffer_clear();
-    framebuffer_set_cursor(0, 0);
-    __asm__("int $0x4");
-    while (true)
-        ;
-}
+// void kernel_setup(void)
+// {
+//     load_gdt(&_gdt_gdtr);
+//     pic_remap();
+//     initialize_idt();
+//     framebuffer_clear();
+//     framebuffer_set_cursor(0, 0);
+//     __asm__("int $0x4");
+//     while (true)
+//         ;
+// }
 // void kernel_setup(void)
 // {
 //     load_gdt(&_gdt_gdtr);
@@ -56,19 +56,22 @@ void kernel_setup(void)
 //         ;
 // }
 
-//  void kernel_setup(void) {
-//     load_gdt(&_gdt_gdtr);
-//     pic_remap();
-//     initialize_idt();
-//     activate_keyboard_interrupt();
-//     framebuffer_clear();
-//     framebuffer_set_cursor(0, 0);
-        
-//     int col = 0;
-//     keyboard_state_activate();
-//     while (true) {
-//          char c;
-//          get_keyboard_buffer(&c);
-//          if (c) framebuffer_write(0, col++, c, 0xF, 0);
-//     }
-// }
+void kernel_setup(void)
+{
+    load_gdt(&_gdt_gdtr);
+    pic_remap();
+    initialize_idt();
+    activate_keyboard_interrupt();
+    framebuffer_clear();
+    framebuffer_set_cursor(0, 0);
+
+    int col = 0;
+    keyboard_state_activate();
+    while (true)
+    {
+        char c;
+        get_keyboard_buffer(&c);
+        if (c)
+            framebuffer_write(0, col++, c, 0xF, 0);
+    }
+}
