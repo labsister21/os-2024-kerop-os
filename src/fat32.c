@@ -110,10 +110,10 @@ uint32_t cluster_to_lba(uint32_t cluster)
  * @param name               8-byte char for directory name
  * @param parent_dir_cluster Parent directory cluster number
  */
-void init_directory_table(struct FAT32DirectoryTable *dir_table, char *name, uint32_t parent_dir_cluster)
-{
-    for (int i = 0; i < 8; i++)
-    {
-        dir_table->table[0].name[i] = name[i];
-    }
-}
+// void init_directory_table(struct FAT32DirectoryTable *dir_table, char *name, uint32_t parent_dir_cluster)
+// {
+//     for (int i = 0; i < 8; i++)
+//     {
+//         dir_table->table[0].name[i] = name[i];
+//     }
+// }
