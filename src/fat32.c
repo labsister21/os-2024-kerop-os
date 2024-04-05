@@ -336,4 +336,92 @@ int8_t write(struct FAT32DriverRequest request){
  * @param request buf and buffer_size is unused
  * @return Error code: 0 success - 1 not found - 2 folder is not empty - -1 unknown
  */
-int8_t delete(struct FAT32DriverRequest request);
+int8_t delete(struct FAT32DriverRequest request){
+
+    if(memcmp(request.name, "\0\0\0\0\0\0\0\0", 8) == 0) {
+        return -1;
+    }
+
+    struct FAT32DirectoryTable parent_dir;
+    read_clusters(&parent_dir, request.parent_cluster_number, 1);
+    for(uint32_t i = 1; i < CLUSTER_SIZE/sizeof(struct FAT32DirectoryEntry); i++) {
+        if (memcmp(request.name, parent_dir.table[i].name, 8) == 0 && memcmp(request.ext, parent_dir.table[i].ext, 3) == 0) {
+
+            uint32_t cluster_number = parent_dir.table[i].cluster_high << 16 | parent_dir.table[i].cluster_low;
+
+            if (parent_dir.table[i].attribute == ATTR_SUBDIRECTORY) {
+                // Delete directory
+
+                struct FAT32DirectoryTable curr_table;
+                read_clusters(&curr_table, cluster_number, 1);
+
+                uint8_t empty = 1;
+                for(uint32_t i = 1; i < CLUSTER_SIZE/sizeof(struct FAT32DirectoryEntry) && 
+                    curr_table.table[i].user_attribute == UATTR_NOT_EMPTY; i++) {
+                }
+
+                if (i<CLUSTER_SIZE/sizeof(struct FAT32DirectoryEntry)){
+                    empty = 0;
+                }
+
+                if(!empty) {
+                    return 2;
+                }
+
+                // isi null cluster directory
+                struct ClusterBuffer cbuf;
+                for(uint32_t i = 0; i < CLUSTER_SIZE; i++) {
+                    cbuf.buf[i] = '\0';
+                }
+                write_clusters(&cbuf, cluster_number, 1);
+
+                // Hapus directory
+                driver_state.fat_table.cluster_map[cluster_number] = FAT32_FAT_EMPTY_ENTRY;
+
+            } else {
+                // Delete file
+
+                // isi null file
+                
+                struct ClusterBuffer cbuf;
+                for(uint32_t i = 0; i < CLUSTER_SIZE; i++) {
+                    cbuf.buf[i] = '\0';
+                }
+                // hapus dari storage
+                do {
+                    
+                    write_clusters(&cbuf, cluster_number, 1);
+
+                    uint32_t temp_cluster_number = cluster_number;
+                    cluster_number = driver_state.fat_table.cluster_map[cluster_number];
+                    driver_state.fat_table.cluster_map[temp_cluster_number] = FAT32_FAT_EMPTY_ENTRY;
+                } while (driver_state.fat_table.cluster_map[cluster_number] != FAT32_FAT_END_OF_FILE);
+                
+
+                driver_state.fat_table.cluster_map[cluster_number] = FAT32_FAT_EMPTY_ENTRY;
+                write_clusters(&cbuf, cluster_number, 1);
+
+            }
+
+            memcpy(parent_dir.table[i].name, "\0\0\0\0\0\0\0\0", 8);
+            memcpy(parent_dir.table[i].ext, "\0\0\0", 3);
+            parent_dir.table[i].attribute = 0;
+            parent_dir.table[i].user_attribute = 0;
+            parent_dir.table[i].undelete = 0;
+            parent_dir.table[i].create_time = 0;
+            parent_dir.table[i].create_date = 0;
+            parent_dir.table[i].access_date = 0;
+            parent_dir.table[i].modified_time = 0;
+            parent_dir.table[i].modified_date = 0;
+            parent_dir.table[i].filesize = 0;
+            parent_dir.table[i].cluster_low = 0;
+            parent_dir.table[i].cluster_high = 0;
+
+            write_clusters(&(driver_state.fat_table), FAT_CLUSTER_NUMBER, 1);
+            write_clusters(&(parent_dir), request.parent_cluster_number, 1);
+
+            return 0;
+        }
+    }
+    return -1;
+}
