@@ -6,88 +6,13 @@
 
 static struct FAT32DriverState driver_state;
 const uint8_t fs_signature[BLOCK_SIZE] = {
-    'C',
-    'o',
-    'u',
-    'r',
-    's',
-    'e',
-    ' ',
-    ' ',
-    ' ',
-    ' ',
-    ' ',
-    ' ',
-    ' ',
-    ' ',
-    ' ',
-    ' ',
-    'D',
-    'e',
-    's',
-    'i',
-    'g',
-    'n',
-    'e',
-    'd',
-    ' ',
-    'b',
-    'y',
-    ' ',
-    ' ',
-    ' ',
-    ' ',
-    ' ',
-    'L',
-    'a',
-    'b',
-    ' ',
-    'S',
-    'i',
-    's',
-    't',
-    'e',
-    'r',
-    ' ',
-    'I',
-    'T',
-    'B',
-    ' ',
-    ' ',
-    'M',
-    'a',
-    'd',
-    'e',
-    ' ',
-    'w',
-    'i',
-    't',
-    'h',
-    ' ',
-    '<',
-    '3',
-    ' ',
-    ' ',
-    ' ',
-    ' ',
-    '-',
-    '-',
-    '-',
-    '-',
-    '-',
-    '-',
-    '-',
-    '-',
-    '-',
-    '-',
-    '-',
-    '2',
-    '0',
-    '2',
-    '4',
-    '\n',
-    [BLOCK_SIZE - 2] = 'O',
-    [BLOCK_SIZE - 1] = 'k',
+    'C', 'o', 'u', 'r', 's', 'e', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',  ' ',
+    'D', 'e', 's', 'i', 'g', 'n', 'e', 'd', ' ', 'b', 'y', ' ', ' ', ' ', ' ',  ' ',
+    'L', 'a', 'b', ' ', 'S', 'i', 's', 't', 'e', 'r', ' ', 'I', 'T', 'B', ' ',  ' ',
+    'M', 'a', 'd', 'e', ' ', 'w', 'i', 't', 'h', ' ', '<', '3', ' ', ' ', ' ',  ' ',
+    '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '2', '0', '2', '4', '\n',
+    [BLOCK_SIZE-2] = 'O',
+    [BLOCK_SIZE-1] = 'k',
 };
 
 /* -- Driver Interfaces -- */
@@ -119,22 +44,16 @@ void init_directory_table(struct FAT32DirectoryTable *dir_table, char *name, uin
     {
         self_entry->name[i] = name[i];
     }
+    for (int i = 0; i < 3; i++)
+    {
+        self_entry->ext[i] = '\0';
+    }
     self_entry->attribute = ATTR_SUBDIRECTORY;
     self_entry->user_attribute = UATTR_NOT_EMPTY;
-    self_entry->cluster_low = ROOT_CLUSTER_NUMBER;
-    self_entry->cluster_high = (ROOT_CLUSTER_NUMBER >> 16);
-
-    struct FAT32DirectoryEntry *parent_entry = &(dir_table->table[1]);
-    parent_entry->name[0] = '.';
-    parent_entry->name[1] = '.';
-    for (int i = 2; i < 8; i++)
-    {
-        parent_entry->name[i] = ' ';
-    }
-    parent_entry->attribute = ATTR_SUBDIRECTORY;
-    parent_entry->user_attribute = UATTR_NOT_EMPTY;
-    parent_entry->cluster_low = parent_dir_cluster;
-    parent_entry->cluster_high = (parent_dir_cluster >> 16);
+    self_entry->cluster_low = parent_dir_cluster;
+    self_entry->cluster_high = (parent_dir_cluster >> 16);
+    self_entry->filesize = 0;
+    dir_table->table[0] = *self_entry;
 }
 /**
  * Checking whether filesystem signature is missing or not in boot sector
@@ -164,7 +83,8 @@ void create_fat32(void)
     driver_state.fat_table.cluster_map[1] = CLUSTER_1_VALUE;
     driver_state.fat_table.cluster_map[2] = FAT32_FAT_END_OF_FILE;
 
-    write_clusters(driver_state.fat_table.cluster_map, 0, 1);
+    init_directory_table(&(driver_state.dir_table_buf), "ROOT\0\0\0\0", 2);
+    write_clusters(driver_state.fat_table.cluster_map, 2, 1);
 }
 
 /**
@@ -175,7 +95,7 @@ void initialize_filesystem_fat32(void)
 {
     if (is_empty_storage())
     {
-        create_fat32()
+        create_fat32();
     }
     else
     {
@@ -194,7 +114,7 @@ void initialize_filesystem_fat32(void)
  */
 void write_clusters(const void *ptr, uint32_t cluster_number, uint8_t cluster_count)
 {
-    write_blocks(ptr, cluster_number * 4, cluster_count * CLUSTER_BLOCK_COUNT);
+    write_blocks(ptr, cluster_to_lba(cluster_number), cluster_count * CLUSTER_BLOCK_COUNT);
 }
 /**
  * Read cluster operation, wrapper for read_blocks().
@@ -206,7 +126,7 @@ void write_clusters(const void *ptr, uint32_t cluster_number, uint8_t cluster_co
  */
 void read_clusters(void *ptr, uint32_t cluster_number, uint8_t cluster_count)
 {
-    read_blocks(ptr, cluster_number * 4, cluster_count * CLUSTER_BLOCK_COUNT);
+    read_blocks(ptr, cluster_to_lba(cluster_number), cluster_count * CLUSTER_BLOCK_COUNT);
 }
 
 /* -- CRUD Operation -- */
@@ -233,18 +153,79 @@ int8_t read_directory(struct FAT32DriverRequest request)
     {
         if (memcmp(dir_table.table[i].name, request.name, 8) == 0)
         {
+            if (dir_table.table[i].attribute == ATTR_SUBDIRECTORY && dir_table.table[i].filesize == 0)
+            {
+                return 0;
+            }
+            else if (dir_table.table[i].attribute != ATTR_SUBDIRECTORY && dir_table.table[i].filesize != 0)
+            {
+                return 1;
+            }
+            else
+            {
+                return -1;
+            }
         }
     }
+    return 2;
 }
-
 /**
  * FAT32 read, read a file from file system.
  *
  * @param request All attribute will be used for read, buffer_size will limit reading count
  * @return Error code: 0 success - 1 not a file - 2 not enough buffer - 3 not found - -1 unknown
  */
-int8_t read(struct FAT32DriverRequest request);
 
+
+int8_t read(struct FAT32DriverRequest request) {
+    if (memcmp(request.name, "\0\0\0\0\0\0\0\0", 8) == 0) {
+        return -1; // unknown, isinia null
+    }
+    
+    if (request.buffer_size == 0) {
+        return 1; // not a file
+    }
+
+    struct FAT32DirectoryTable parent_table;
+    read_clusters(&parent_table, request.parent_cluster_number, 1);
+
+    for (uint32_t i = 1; i < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry); i++) {
+        if (memcmp(request.name, parent_table.table[i].name, 8) == 0 &&
+            memcmp(request.ext, parent_table.table[i].ext, 3) == 0) {
+            
+            uint32_t start_cluster = (parent_table.table[i].cluster_high << 16) | parent_table.table[i].cluster_low;
+
+            uint32_t clusters_to_read = (request.buffer_size + CLUSTER_SIZE - 1) / CLUSTER_SIZE;
+
+            uint32_t remaining_bytes = request.buffer_size;
+            uint32_t current_cluster = start_cluster;
+            uint32_t bytes_read_total = 0;
+
+            while (clusters_to_read > 0 && current_cluster != FAT32_FAT_END_OF_FILE) {
+                uint32_t bytes_to_read = remaining_bytes > CLUSTER_SIZE ? CLUSTER_SIZE : remaining_bytes;
+
+                read_clusters(request.buf + bytes_read_total, current_cluster, 1);
+
+                bytes_read_total += bytes_to_read;
+                remaining_bytes -= bytes_to_read;
+                clusters_to_read--;
+
+                current_cluster = driver_state.fat_table.cluster_map[current_cluster];
+            }
+
+            if (bytes_read_total == request.buffer_size) {
+                // terbaca semua
+                return 0;
+            } else if (bytes_read_total < request.buffer_size) {
+                return 2; // not enough buffer
+            } else {
+                return -1; // unknown error
+            }
+        }
+    }
+
+    //  not found in the parent directory
+    return 3; 
 /**
  * FAT32 write, write a file or folder to file system.
  *
