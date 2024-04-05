@@ -31,6 +31,7 @@
 /* -- FAT32 DirectoryEntry constants -- */
 #define ATTR_SUBDIRECTORY 0b00010000
 #define UATTR_NOT_EMPTY 0b10101010
+#define ATTR_ARCHIVE 0b00100000
 
 // Boot sector signature for this file system "FAT32 - IF2230 edition"
 extern const uint8_t fs_signature[BLOCK_SIZE];
