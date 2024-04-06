@@ -47,13 +47,53 @@
 //     initialize_idt();
 //     framebuffer_clear();
 //     framebuffer_set_cursor(0, 0);
+//     activate_keyboard_interrupt();
 
-//     struct BlockBuffer b;
-//     for (int i = 0; i < 512; i++)
-//         b.buf[i] = i;
-//     write_blocks(&b, 17, 1);
+
+//     struct FAT32DriverRequest req;
+//     req.parent_cluster_number = 2;
+//     req.buffer_size =  1;
+//     memcpy(req.name,"kano\0\0\0\0",8);
+
+//     keyboard_state_activate();
+    
+
+//     // struct BlockBuffer b;
+//     // for (int i = 0; i < 512; i++)
+//     //     b.buf[i] = i;
+//     // write_blocks(&b, 17, 1);
+//     do{
+//         int8_t i = read_directory(req);
+//         if (i==0){
+//             framebuffer_write(0,2,'y',0xF,0);
+//         }else if (i==1){
+//             framebuffer_write(0,2,'n',0xF,0);
+//         }else if (i==2){
+//             framebuffer_write(0,2,'f',0xF,0);
+//         }else{
+//             framebuffer_write(0,2,'x',0xF,0);
+//         }
+//     }while(true);
+// }
+
+// void kernel_setup(void)
+// {
+//     load_gdt(&_gdt_gdtr);
+//     pic_remap();
+//     initialize_idt();
+//     activate_keyboard_interrupt();
+//     framebuffer_clear();
+//     framebuffer_set_cursor(0, 0);
+
+//     int col = 0;
+//     keyboard_state_activate();
 //     while (true)
-//         ;
+//     {
+//         char c;
+//         get_keyboard_buffer(&c);
+//         if (c)
+//             framebuffer_write(0, col++, c, 0xF, 0);
+//     }
 // }
 
 void kernel_setup(void)
@@ -61,17 +101,19 @@ void kernel_setup(void)
     load_gdt(&_gdt_gdtr);
     pic_remap();
     initialize_idt();
-    activate_keyboard_interrupt();
     framebuffer_clear();
     framebuffer_set_cursor(0, 0);
-
-    int col = 0;
+    initialize_filesystem_fat32();
+    activate_keyboard_interrupt();
     keyboard_state_activate();
+
+    struct FAT32DriverRequest req =
+        {
+            .buf = "wawaaw",
+            .name = "hihuha",
+            .parent_cluster_number = 2,
+            .buffer_size = sizeof(req.buf)};
+    delete(req);
     while (true)
-    {
-        char c;
-        get_keyboard_buffer(&c);
-        if (c)
-            framebuffer_write(0, col++, c, 0xF, 0);
-    }
+        ;
 }
