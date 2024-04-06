@@ -17,7 +17,7 @@ AFLAGS        = -f elf32 -g -F dwarf
 LFLAGS        = -T $(SOURCE_FOLDER)/linker.ld -melf_i386
 
 #Disk
-DISK_NAME      = storage
+DISK_NAME      = sample-image
 DISK_RUN 	   = -drive file=$(DISK_NAME).bin,format=raw,if=ide,index=0,media=disk
 
 

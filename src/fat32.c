@@ -274,8 +274,7 @@ int8_t write(struct FAT32DriverRequest request){
     parent_dir.table[n].filesize = request.buffer_size;
     // write folder
     if (request.buffer_size==0){
-        uint8_t i = 2;
-        uint32_t clusterNum;
+        uint32_t i = 2;
         while (driver_state.fat_table.cluster_map[i] != FAT32_FAT_EMPTY_ENTRY && i <CLUSTER_MAP_SIZE) 
         {
             i++;
@@ -295,8 +294,8 @@ int8_t write(struct FAT32DriverRequest request){
     }else{
         // write file
         uint8_t n_cluster = (int)(request.buffer_size/CLUSTER_SIZE) + (request.buffer_size % CLUSTER_SIZE!=0);
-        uint8_t j = 0;
-        uint8_t k = 2;
+        uint32_t j = 0;
+        uint32_t k = 2;
         uint32_t cluster_empty[n_cluster];
 
         while (j<n_cluster && k<CLUSTER_MAP_SIZE)
