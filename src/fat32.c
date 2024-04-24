@@ -25,7 +25,7 @@ const uint8_t fs_signature[BLOCK_SIZE] = {
  */
 uint32_t cluster_to_lba(uint32_t cluster)
 {
-    return cluster * 0x200;
+    return cluster *4;
 }
 /**
  * Initialize DirectoryTable value with
@@ -149,25 +149,31 @@ int8_t read_directory(struct FAT32DriverRequest request)
     
     struct FAT32DirectoryTable dir_table;
     read_clusters(&dir_table, request.parent_cluster_number, 1);
-    for (int i = 0; i < 64; i++)
+
+    for (uint32_t i = 0; i < CLUSTER_SIZE/sizeof(struct FAT32DirectoryEntry); i++)
     {
         if (memcmp(dir_table.table[i].name, request.name, 8) == 0)
         {
-            if (dir_table.table[i].attribute == ATTR_SUBDIRECTORY && dir_table.table[i].filesize == 0)
+            if (dir_table.table[i].attribute == ATTR_SUBDIRECTORY && dir_table.table[i].filesize==0)
             {
+
                 struct FAT32DirectoryTable reqDirectory;
                 read_clusters(&reqDirectory,(dir_table.table[i].cluster_high << 16) | dir_table.table[i].cluster_low,1);
                 memcpy(request.buf,&reqDirectory,sizeof(struct FAT32DirectoryTable));
                 return 0;
+
             }
-            else if (dir_table.table[i].filesize != 0)
+            else
             {
+
                 return 1;
+
             }
         }
     }
     return 2;
 }
+
 /**
  * FAT32 read, read a file from file system.
  *
@@ -238,10 +244,14 @@ int8_t write(struct FAT32DriverRequest request){
         return -1; // unknown, isinia null
     }
 
+    if (request.parent_cluster_number<2){
+        return 2;
+    }
+
     struct FAT32DirectoryTable parent_dir;
     read_clusters(&parent_dir,request.parent_cluster_number,1);
 
-    for (uint8_t i = 0;i < 64;i++){
+    for (uint8_t i = 0;i < CLUSTER_SIZE/sizeof(struct FAT32DirectoryEntry);i++){
 
         if (memcmp(parent_dir.table[i].name,request.name,8)==0){
             return 1;
@@ -263,7 +273,6 @@ int8_t write(struct FAT32DriverRequest request){
     }else{
         parent_dir.table[n].attribute = ATTR_ARCHIVE;
     }
-    parent_dir.table[n].attribute = request.buffer_size == 0 ? ATTR_SUBDIRECTORY : ATTR_ARCHIVE;
     parent_dir.table[n].user_attribute = UATTR_NOT_EMPTY;
     parent_dir.table[n].undelete = 0;
     parent_dir.table[n].create_time = 0;
@@ -274,8 +283,7 @@ int8_t write(struct FAT32DriverRequest request){
     parent_dir.table[n].filesize = request.buffer_size;
     // write folder
     if (request.buffer_size==0){
-        uint8_t i = 2;
-        uint32_t clusterNum;
+        uint32_t i = 2;
         while (driver_state.fat_table.cluster_map[i] != FAT32_FAT_EMPTY_ENTRY && i <CLUSTER_MAP_SIZE) 
         {
             i++;
@@ -295,8 +303,8 @@ int8_t write(struct FAT32DriverRequest request){
     }else{
         // write file
         uint8_t n_cluster = (int)(request.buffer_size/CLUSTER_SIZE) + (request.buffer_size % CLUSTER_SIZE!=0);
-        uint8_t j = 0;
-        uint8_t k = 2;
+        uint32_t j = 0;
+        uint32_t k = 2;
         uint32_t cluster_empty[n_cluster];
 
         while (j<n_cluster && k<CLUSTER_MAP_SIZE)
