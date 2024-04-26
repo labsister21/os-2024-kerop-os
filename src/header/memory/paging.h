@@ -34,7 +34,7 @@ struct PageDirectoryEntryFlag {
     uint8_t write_through_bit   : 1;
     uint8_t cache_disable_bit   : 1;
     uint8_t accessed_bit        : 1;
-    uint8_t available_bit       : 1;
+    uint8_t dirty_bit       : 1;
     uint8_t use_pagesize_4_mb   : 1;
 } __attribute__((packed));
 
@@ -55,7 +55,7 @@ struct PageDirectoryEntry {
     struct PageDirectoryEntryFlag flag;
     uint16_t global_page    : 1;
     // TODO : Continue, Use uint16_t + bitfield here, Do not use uint8_t
-    uint16_t available_bit  : 3;
+    uint16_t ignore_bit  : 3;
     uint16_t pat_bit       : 1;
     uint16_t higher_address : 8;
     uint16_t reserved_2     : 1;

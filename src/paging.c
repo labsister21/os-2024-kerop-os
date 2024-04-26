@@ -53,7 +53,7 @@ void flush_single_tlb(void *virtual_addr) {
 // TODO: Implement
 bool paging_allocate_check(uint32_t amount) {
     // TODO: Check whether requested amount is available
-    if(page_manager_state.free_page_frame_count < (amount>>(22))) return false;
+    if(page_manager_state.free_page_frame_count < (amount>>(22)) ) return false;
     return true;
 }
 
@@ -78,7 +78,8 @@ bool paging_allocate_user_page_frame(struct PageDirectory *page_dir, void *virtu
     for (int i = 1; i < PAGE_FRAME_MAX_COUNT; i++) {
         if (!page_manager_state.page_frame_map[i]) {
             page_manager_state.page_frame_map[i] = true;
-            update_page_directory_entry(page_dir, (void*)(i << 22), virtual_addr, (struct PageDirectoryEntryFlag) {
+            uint32_t* physical_addr = (uint32_t*) (PAGE_FRAME_SIZE * i);
+            update_page_directory_entry(page_dir, physical_addr, virtual_addr, (struct PageDirectoryEntryFlag) {
                 .present_bit       = 1,
                 .write_bit         = 1,
                 .user_bit          = 1,
@@ -100,7 +101,7 @@ bool paging_free_user_page_frame(struct PageDirectory *page_dir, void *virtual_a
      */
     uint32_t page_index = ((uint32_t) virtual_addr >> 22) & 0x3FF;
     uint32_t physical_addr = page_dir->table[page_index].lower_address << 22;
-    page_manager_state.page_frame_map[physical_addr >> 22] = false;
+    page_manager_state.page_frame_map[(physical_addr) / PAGE_FRAME_SIZE] = false;
     page_manager_state.free_page_frame_count++;
     update_page_directory_entry(page_dir, 0, virtual_addr, (struct PageDirectoryEntryFlag) {
         .present_bit       = 0,
