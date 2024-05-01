@@ -4,7 +4,8 @@
     "*.py": "python",
     "disk.h": "c",
     "portio.h": "c",
-    "gdt.h": "c"
+    "gdt.h": "c",
+    "framebuffer.h": "c"
   },
   "C_Cpp_Runner.cCompilerPath": "gcc",
   "C_Cpp_Runner.cppCompilerPath": "g++",
