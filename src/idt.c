@@ -4,7 +4,7 @@
 struct InterruptDescriptorTable interrupt_descriptor_table;
 struct IDTR _idt_idtr = {
     .size = sizeof(interrupt_descriptor_table) - 1,
-    .address = &interrupt_descriptor_table,
+    .address = (void *)&interrupt_descriptor_table.table[0],
 };
 void initialize_idt(void)
 {
@@ -21,12 +21,19 @@ void initialize_idt(void)
      * Segment: GDT_KERNEL_CODE_SEGMENT_SELECTOR
      * Privilege: 0
      */
-    for (int i = 0; i < ISR_STUB_TABLE_LIMIT; i++)
+    for (uint8_t i = 0; i < ISR_STUB_TABLE_LIMIT; i++)
     {
-        /* code */
-        set_interrupt_gate(i, isr_stub_table[i], GDT_KERNEL_CODE_SEGMENT_SELECTOR, 0);
+        if (i >= 0x30 && i <= 0x3F)
+        {
+            set_interrupt_gate(i, isr_stub_table[i], GDT_KERNEL_CODE_SEGMENT_SELECTOR,
+                               0x3);
+        }
+        else
+        {
+            set_interrupt_gate(i, isr_stub_table[i], GDT_KERNEL_CODE_SEGMENT_SELECTOR,
+                               0x0);
+        }
     }
-
     __asm__ volatile("lidt %0" : : "m"(_idt_idtr));
     __asm__ volatile("sti");
 }
