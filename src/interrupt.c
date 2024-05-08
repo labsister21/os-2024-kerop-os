@@ -55,22 +55,6 @@ void pic_remap(void)
     out(PIC1_DATA, PIC_DISABLE_ALL_MASK);
     out(PIC2_DATA, PIC_DISABLE_ALL_MASK);
 }
-void main_interrupt_handler(struct InterruptFrame frame)
-{
-
-    switch (frame.int_number)
-    {
-    case IRQ_KEYBOARD + PIC1_OFFSET:
-        keyboard_isr();
-        break;
-    }
-}
-
-void activate_keyboard_interrupt(void)
-{
-    out(PIC1_DATA, in(PIC1_DATA) & ~(1 << IRQ_KEYBOARD));
-}
-
 void syscall(struct InterruptFrame frame)
 {
     switch (frame.cpu.general.eax)
@@ -99,7 +83,7 @@ void syscall(struct InterruptFrame frame)
         get_keyboard_buffer((char *)frame.cpu.general.ebx);
         break;
     case 5:
-        putchar(frame.cpu.general.ebx, frame.cpu.general.ecx);
+        putchar(*(char *)frame.cpu.general.ebx, frame.cpu.general.ecx);
         break;
     case 6:
         // int string_length = 0;
@@ -117,4 +101,23 @@ void syscall(struct InterruptFrame frame)
         keyboard_state_activate();
         break;
     }
+}
+
+void main_interrupt_handler(struct InterruptFrame frame)
+{
+
+    switch (frame.int_number)
+    {
+    case IRQ_KEYBOARD + PIC1_OFFSET:
+        keyboard_isr();
+        break;
+    case 0x30:
+        syscall(frame);
+        break;
+    }
+}
+
+void activate_keyboard_interrupt(void)
+{
+    out(PIC1_DATA, in(PIC1_DATA) & ~(1 << IRQ_KEYBOARD));
 }
