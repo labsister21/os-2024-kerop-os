@@ -49,14 +49,12 @@
 //     framebuffer_set_cursor(0, 0);
 //     activate_keyboard_interrupt();
 
-
 //     struct FAT32DriverRequest req;
 //     req.parent_cluster_number = 2;
 //     req.buffer_size =  1;
 //     memcpy(req.name,"kano\0\0\0\0",8);
 
 //     keyboard_state_activate();
-    
 
 //     // struct BlockBuffer b;
 //     // for (int i = 0; i < 512; i++)
@@ -118,7 +116,38 @@
         ;
 } */
 
-void kernel_setup(void) {
+// void kernel_setup(void) {
+//     load_gdt(&_gdt_gdtr);
+//     pic_remap();
+//     initialize_idt();
+//     activate_keyboard_interrupt();
+//     framebuffer_clear();
+//     framebuffer_set_cursor(0, 0);
+//     initialize_filesystem_fat32();
+//     gdt_install_tss();
+//     set_tss_register();
+
+//     // Allocate first 4 MiB virtual memory
+//     paging_allocate_user_page_frame(&_paging_kernel_page_directory, (uint8_t*) 0);
+
+//     // Write shell into memory
+//     struct FAT32DriverRequest request = {
+//         .buf                   = (uint8_t*) 0,
+//         .name                  = "shell",
+//         .ext                   = "\0\0\0",
+//         .parent_cluster_number = ROOT_CLUSTER_NUMBER,
+//         .buffer_size           = 0x100000,
+//     };
+//     read(request);
+
+//     // Set TSS $esp pointer and jump into shell
+//     set_tss_kernel_current_stack();
+//     kernel_execute_user_program((uint8_t*) 0);
+
+//     while (true);
+// }
+void kernel_setup(void)
+{
     load_gdt(&_gdt_gdtr);
     pic_remap();
     initialize_idt();
@@ -130,21 +159,43 @@ void kernel_setup(void) {
     set_tss_register();
 
     // Allocate first 4 MiB virtual memory
-    paging_allocate_user_page_frame(&_paging_kernel_page_directory, (uint8_t*) 0);
+    paging_allocate_user_page_frame(&_paging_kernel_page_directory, (uint8_t *)0);
 
     // Write shell into memory
     struct FAT32DriverRequest request = {
-        .buf                   = (uint8_t*) 0,
-        .name                  = "shell",
-        .ext                   = "\0\0\0",
+        .buf = (uint8_t *)0,
+        .name = "shell",
+        .ext = "\0\0\0",
         .parent_cluster_number = ROOT_CLUSTER_NUMBER,
-        .buffer_size           = 0x100000,
+        .buffer_size = sizeof(request.buf),
     };
+
     read(request);
+    if (read(request) == 0)
+    {
+        framebuffer_write(3, 9, '0', 0, 0xF);
+    }
+    else if (read(request) == 1)
+    {
+        framebuffer_write(3, 9, '1', 0, 0xF);
+    }
+    else if (read(request) == 2)
+    {
+        framebuffer_write(3, 9, '2', 0, 0xF);
+    }
+    else if (read(request) == 3)
+    {
+        framebuffer_write(3, 9, '3', 0, 0xF);
+    }
+    else
+    {
+        framebuffer_write(3, 9, '-', 0, 0xF);
+    }
 
-    // Set TSS $esp pointer and jump into shell 
+    // Set TSS $esp pointer and jump into shell
     set_tss_kernel_current_stack();
-    kernel_execute_user_program((uint8_t*) 0);
+    kernel_execute_user_program((uint8_t *)0);
 
-    while (true);
+    while (true)
+        ;
 }

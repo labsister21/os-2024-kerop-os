@@ -1,6 +1,8 @@
 #include <stdint.h>
+#include "header/cpu/interrupt.h"
 #include "header/filesystem/fat32.h"
-
+#include "header/stdlib/string.h"
+#include "header/driver/disk.h"
 uint32_t DIR_NUMBER_STACK[256] = {2};
 char DIR_NAME_STACK[256][9] = {"ROOT\0\0\0\0\0"};
 uint8_t DIR_STACK_LENGTH = 1;
@@ -24,7 +26,7 @@ uint8_t DIR_STACK_LENGTH = 1;
 #define KEYBOARD_BUFFER_SIZE 256
 
 
-void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx) {
+void syscall_user(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx) {
     __asm__ volatile("mov %0, %%ebx" : /* <Empty> */ : "r"(ebx));
     __asm__ volatile("mov %0, %%ecx" : /* <Empty> */ : "r"(ecx));
     __asm__ volatile("mov %0, %%edx" : /* <Empty> */ : "r"(edx));
@@ -43,13 +45,13 @@ void change_directory(char* new_dir) {
       .buffer_size = 0,
   };
 
-  if (strcmp(new_dir, "..") == 0) {
+  if (memcmp(new_dir, "..",2) == 0) {
     if (DIR_STACK_LENGTH <= 1) {
       return;
     } else {
       DIR_STACK_LENGTH--;
     }
-  } else if (strcmp(new_dir, ".") == 0) {
+  } else if (memcmp(new_dir, ".",1) == 0) {
     return;
   } else {
     for (int i = 0; i < 8; i++) {
@@ -57,10 +59,10 @@ void change_directory(char* new_dir) {
     }
 
     int8_t retcode;
-    syscall(1, (uint32_t)&request, (uint32_t)&retcode, 0);
+    syscall_user(1, (uint32_t)&request, (uint32_t)&retcode, 0);
 
     if (retcode != 0) {
-      syscall(5, (uint32_t) "INVALID DIRECTORY\n", 18, DARK_GREEN);
+      syscall_user(5, (uint32_t) "INVALID DIRECTORY\n", 18, DARK_GREEN);
       return;
     }
 
@@ -138,21 +140,16 @@ int main(void) {
         .buffer_size           = CLUSTER_SIZE,
     };
     int32_t retcode;
-    syscall(0, (uint32_t) &request, (uint32_t) &retcode, 0);
+    syscall_user(0, (uint32_t) &request, (uint32_t) &retcode, 0);
     if (retcode == 0)   
-        syscall(6, (uint32_t) "owo\n", 4, 0xF);
+        syscall_user(6, (uint32_t) "owo\n", 4, 0xF);
 
     char buf;
-    syscall(7, 0, 0, 0);
+    syscall_user(7, 0, 0, 0);
     while (true) {
-        syscall(4, (uint32_t) &buf, 0, 0);
-        syscall(5, (uint32_t) &buf, 0xF, 0);
+        syscall_user(4, (uint32_t) &buf, 0, 0);
+        syscall_user(5, (uint32_t) &buf, 0xF, 0);
     }
 
     return 0;
 }
-
-// int main(void) {
-//     __asm__ volatile("mov %0, %%eax" : /* <Empty> */ : "r"(0xDEADBEEF));
-//     return 0;
-// }
