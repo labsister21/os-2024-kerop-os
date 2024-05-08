@@ -155,6 +155,7 @@ void kernel_setup(void)
     framebuffer_clear();
     framebuffer_set_cursor(0, 0);
     initialize_filesystem_fat32();
+
     gdt_install_tss();
     set_tss_register();
 
@@ -171,26 +172,6 @@ void kernel_setup(void)
     };
 
     read(request);
-    if (read(request) == 0)
-    {
-        framebuffer_write(3, 9, '0', 0, 0xF);
-    }
-    else if (read(request) == 1)
-    {
-        framebuffer_write(3, 9, '1', 0, 0xF);
-    }
-    else if (read(request) == 2)
-    {
-        framebuffer_write(3, 9, '2', 0, 0xF);
-    }
-    else if (read(request) == 3)
-    {
-        framebuffer_write(3, 9, '3', 0, 0xF);
-    }
-    else
-    {
-        framebuffer_write(3, 9, '-', 0, 0xF);
-    }
 
     // Set TSS $esp pointer and jump into shell
     set_tss_kernel_current_stack();

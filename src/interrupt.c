@@ -98,6 +98,9 @@ void syscall(struct InterruptFrame frame)
     case 4:
         get_keyboard_buffer((char *)frame.cpu.general.ebx);
         break;
+    case 5:
+        putchar(frame.cpu.general.ebx, frame.cpu.general.ecx);
+        break;
     case 6:
         // int string_length = 0;
         // char *string = (char *)frame.cpu.general.ebx;

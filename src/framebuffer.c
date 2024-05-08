@@ -31,15 +31,37 @@ void framebuffer_write(uint8_t row, uint8_t col, char c, uint8_t fg, uint8_t bg)
 {
     uint16_t attrib = (bg << 4) | (fg & 0x0F);
     volatile uint16_t *where;
-    where = (volatile uint16_t *)0xB8000 + (row * 80 + col);
+    where = (volatile uint16_t *)FRAMEBUFFER_MEMORY_OFFSET + (row * 80 + col);
     *where = c | (attrib << 8);
 }
 
 void framebuffer_clear(void)
 {
-    // TODO : Implement
-    size_t size = 80 * 25 * 2;
-    memset(FRAMEBUFFER_MEMORY_OFFSET, 0x0, size);
+    uint16_t space = 0x20 | (0x07 << 8);
+    uint16_t i;
+    volatile uint16_t *where;
+    where = (volatile uint16_t *)FRAMEBUFFER_MEMORY_OFFSET;
+    for (i = 0; i < 80 * 25; i++)
+    {
+        *where = space;
+        where++;
+    }
+}
+
+void putchar(char ebx, uint8_t ecx)
+{
+    struct Cursor c = framebuffer_get_cursor();
+    // int offset = c.row * 80 + c.col;
+
+    framebuffer_write(0, c.row * 80 + c.col, ebx, ecx, 0);
+    if (c.col == 79)
+    {
+        framebuffer_set_cursor(c.row + 1, 0);
+    }
+    else
+    {
+        framebuffer_set_cursor(c.row, c.col + 1);
+    }
 }
 void puts(char *ebx, uint8_t length, uint8_t textcolor)
 {
