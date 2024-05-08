@@ -5,6 +5,8 @@
 #include "header/cpu/gdt.h"
 #include "header/filesystem/fat32.h"
 
+
+
 struct TSSEntry _interrupt_tss_entry = {
     .ss0 = GDT_KERNEL_DATA_SEGMENT_SELECTOR,
 };
@@ -86,14 +88,8 @@ void syscall(struct InterruptFrame frame)
         putchar((char *)frame.cpu.general.ebx, frame.cpu.general.ecx);
         break;
     case 6:
-        // int string_length = 0;
-        // char *string = (char *)frame.cpu.general.ebx;
-        // while (string[string_length] != '\0')
-        // {
-        //     string_length++;
-        // }
         puts(
-            (char *)frame.cpu.general.ebx,
+            (char *) frame.cpu.general.ebx,
             frame.cpu.general.ecx,
             frame.cpu.general.edx);
         break;

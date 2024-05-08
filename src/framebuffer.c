@@ -76,25 +76,30 @@ void putchar(char* ebx, uint8_t ecx)
 }
 void puts(char *ebx, uint8_t length, uint8_t textcolor)
 {
-    struct Cursor c = framebuffer_get_cursor();
-    int offset = c.row * 80 + c.col;
-    for (uint8_t i = 0; i < length; i++)
-    {
-        if (offset >= 80 * (25))
-        {
-            int new_off = offset_framebuffer(offset);
-            offset = new_off;
-        }
-        if (ebx[i] == '\n')
-        {
-            offset = (offset / 80 + 1) * 80;
-        }
-        else
-        {
-            framebuffer_write(offset / 80, offset % 80, ebx[i], textcolor, 0x00); // hitam
-            offset += 1;
-        }
+    // struct Cursor c = framebuffer_get_cursor();
+    for (uint8_t i=0;i<length;i++){
+        putchar(ebx+i,textcolor);
     }
+    // int offset = c.row * 80 + c.col;
+    // int newrow = c.row;
+    // int newcol = c.col;
+    // for (uint8_t i = 0; i < length; i++)
+    // {
+    //     if (offset >= 80 * (25))
+    //     {
+    //         int new_off = offset_framebuffer(offset);
+    //         offset = new_off;
+    //     }
+    //     if (ebx[i] == '\n')
+    //     {
+    //         offset = (offset / 80 + 1) * 80;
+    //     }
+    //     else
+    //     {
+    //         framebuffer_write(offset / 80, offset % 80, ebx[i], textcolor, 0x00); // hitam
+    //         offset += 1;
+    //     }
+    // }
 }
 int offset_framebuffer(int offset)
 {

@@ -88,6 +88,19 @@ void change_directory(char *new_dir)
         DIR_STACK_LENGTH++;
     }
 }
+uint8_t strLength(char * str){
+    uint8_t i = 0;
+    while (str[i]!='\0'){
+        i++;
+    }
+    return i;
+
+}
+void assignStr(char* str, char* input,uint8_t length){
+    for (uint8_t i=0;i<length;i++){
+        str[i] = input[i];
+    }
+}
 void list_current_directory()
 {
     struct FAT32DirectoryTable current_table;
@@ -168,22 +181,32 @@ int main(void)
         .buffer_size = CLUSTER_SIZE,
     };
     int32_t retcode;
-    syscall_user(0, (uint32_t)&request, (uint32_t)&retcode, 0);
-    if (retcode == 0)
-        syscall_user(6, (uint32_t) "owo\n", 4, 0xF);
-
-    char buf;
+    
     syscall_user(7,0,0,0);
+    syscall_user(0, (uint32_t)&request, (uint32_t)&retcode, 0);
+    if (retcode == 0){
+        char buf[256] = "owo\n";
+        syscall_user(6, (uint32_t)&buf , 4, 0xF);
+    }
+        
+    
+    // while (true)
+    // {
+    //     buf = 'a';
+    //     syscall_user(4, (uint32_t)&buf, 0, 0);
+    //     // if (buf){
+        
+    //     syscall_user(5, (uint32_t)&buf, 0xF, 0);
+    //     // }
+        
+    // }
+    char buf[256] = "Hugo Ganteng";
+    syscall_user(6, (uint32_t)&buf,12,0xF);   
     while (true)
     {
-        buf = 'a';
-        syscall_user(4, (uint32_t)&buf, 0, 0);
-        // if (buf){
-        
-        syscall_user(5, (uint32_t)&buf, 0xF, 0);
-        // }
-        
+        /* code */
     }
+    
 
     return 0;
 }
