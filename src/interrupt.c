@@ -1,9 +1,9 @@
-
+#include "header/text/framebuffer.h"
 #include "header/cpu/interrupt.h"
 #include "header/cpu/portio.h"
 #include "header/driver/keyboard.h"
 #include "header/cpu/gdt.h"
-#include "src/header/filesystem/fat32.h"
+#include "header/filesystem/fat32.h"
 
 struct TSSEntry _interrupt_tss_entry = {
     .ss0  = GDT_KERNEL_DATA_SEGMENT_SELECTOR,
