@@ -52,16 +52,24 @@ void putchar(char* ebx, uint8_t ecx)
 {
     char kata = *ebx;
     struct Cursor c = framebuffer_get_cursor();
+    int newrow = c.row;
+    int newcol = c.col;
     // int offset = c.row * 80 + c.col;
-    framebuffer_write(c.row, c.col, kata, ecx, 0);
+    if (kata!='\n'){
+        framebuffer_write(c.row, c.col, kata, ecx, 0);
+        newcol += 1;
+    }else{
+        newrow += 1;
+        newcol = 0;
+    }
     if (kata!=0){
         if (c.col == 79)
             {
-                framebuffer_set_cursor(c.row + 1, 0);
+                framebuffer_set_cursor(newcol + 1, 0);
             }   
         else
             {
-                framebuffer_set_cursor(c.row, c.col + 1);
+                framebuffer_set_cursor(newrow, newcol);
             }
     }
     
