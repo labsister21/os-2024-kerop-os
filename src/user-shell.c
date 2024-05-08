@@ -36,7 +36,30 @@ void syscall_user(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx)
     //        so it need to be the last one to mov
     __asm__ volatile("int $0x30");
 }
+int strcmp(char* s1, char* s2) {
+  int i = 0;
+  while (s1[i] == s2[i]) {
+    if (s1[i] == '\0') {
+      return 0;
+    }
+    i++;
+  }
+  return s1[i] - s2[i];
+}
 
+void string_combine(char* s1, char* s2, char* res) {
+  int i = 0;
+  while (s1[i] != '\0') {
+    res[i] = s1[i];
+    i++;
+  }
+  int j = 0;
+  while (s2[j] != '\0') {
+    res[i + j] = s2[j];
+    j++;
+  }
+  res[i + j] = '\0';
+}
 void change_directory(char *new_dir)
 {
     struct FAT32DirectoryTable req_table;
@@ -156,7 +179,7 @@ void list_current_directory()
                         ext_name[j] = current_table.table[i].ext[j];
                     }
                     ext_name[3] = '\0';
-
+                    
                     syscall_user(5, (uint32_t) ".", 1, WHITE);
                     syscall_user(5, (uint32_t)ext_name, 3, WHITE);
                 }
@@ -168,6 +191,53 @@ void list_current_directory()
 
             syscall_user(5, (uint32_t) " ", 1, WHITE);
         }
+    }
+}
+void exec_command(){
+    char buff[256];
+    int i = 0;
+    char intro[9] = "kerop-os\n";
+    syscall_user(6, (uint32_t)&intro,9,0xF); 
+    char input = 'a';
+    do{
+        syscall_user(4, (uint32_t)&input, 0, 0);
+        if (input!=0){
+            buff[i] = input;
+            i+=1;
+        }
+        syscall_user(5,(uint32_t)&input,0xF,0);
+    }while(input!='\n');
+    // syscall_user(5,(uint32_t)&input,0xF,0);
+
+    syscall_user(6,(uint32_t)&buff,250,0xF);
+    // char cd[2] = "cd";
+    // char ls[2] = "ls";
+    // char mkdir[5] = "mkdir";
+    // char cat[3] = "cat";
+    // char cp[2] = "cp";
+    // char rm[2] = "rm";
+    // char mv[2] = "mv";
+    // char find[4] = "find";
+    if (strcmp(buff,"cd")==0){
+        syscall_user(6,(uint32_t)&buff,250,0xF);
+        // cd
+    }else if (strcmp(buff,"ls")==0){
+        // ls
+    }else if (strcmp(buff,"mkdir")==0){
+        // mkdir
+    }else if (strcmp(buff,"cat")==0){
+        // cat
+    }else if (strcmp(buff, "cp")==0){
+        // cp
+    }else if (strcmp(buff,"rm")==0){
+        // rm
+    }else if (strcmp(buff,"mv")==0){
+        // mv
+    }else if (strcmp(buff,"find")==0){
+        // find
+    }else{
+        char errorMsg[26] = "[ERROR]: Invalid Command !";
+        syscall_user(6,(uint32_t)&errorMsg,250,RED);
     }
 }
 int main(void)
@@ -200,11 +270,11 @@ int main(void)
     //     // }
         
     // }
-    char buf[256] = "Hugo Ganteng";
-    syscall_user(6, (uint32_t)&buf,12,0xF);   
+    // char buf[256] = "Hugo Ganteng";
+    // syscall_user(6, (uint32_t)&buf,12,0xF);   
     while (true)
     {
-        /* code */
+        exec_command();
     }
     
 
