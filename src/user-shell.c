@@ -173,11 +173,16 @@ int main(void)
         syscall_user(6, (uint32_t) "owo\n", 4, 0xF);
 
     char buf;
-    keyboard_state_activate();
+    syscall_user(7,0,0,0);
     while (true)
     {
+        buf = 'a';
         syscall_user(4, (uint32_t)&buf, 0, 0);
+        // if (buf){
+        
         syscall_user(5, (uint32_t)&buf, 0xF, 0);
+        // }
+        
     }
 
     return 0;

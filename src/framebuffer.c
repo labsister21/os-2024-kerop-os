@@ -48,20 +48,23 @@ void framebuffer_clear(void)
     }
 }
 
-void putchar(char ebx, uint8_t ecx)
+void putchar(char* ebx, uint8_t ecx)
 {
+    char kata = *ebx;
     struct Cursor c = framebuffer_get_cursor();
     // int offset = c.row * 80 + c.col;
-
-    framebuffer_write(0, c.row * 80 + c.col, ebx, ecx, 0);
-    if (c.col == 79)
-    {
-        framebuffer_set_cursor(c.row + 1, 0);
+    framebuffer_write(c.row, c.col, kata, ecx, 0);
+    if (kata!=0){
+        if (c.col == 79)
+            {
+                framebuffer_set_cursor(c.row + 1, 0);
+            }   
+        else
+            {
+                framebuffer_set_cursor(c.row, c.col + 1);
+            }
     }
-    else
-    {
-        framebuffer_set_cursor(c.row, c.col + 1);
-    }
+    
 }
 void puts(char *ebx, uint8_t length, uint8_t textcolor)
 {
