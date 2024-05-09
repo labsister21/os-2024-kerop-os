@@ -4,8 +4,8 @@
 #include "header/stdlib/string.h"
 #include "header/driver/disk.h"
 #include "header/driver/keyboard.h"
-// uint32_t DIR_NUMBER_STACK[256] = {2};
-// char DIR_NAME_STACK[256][9] = {"ROOT\0\0\0\0\0"};
+uint32_t DIR_NUMBER_STACK[32] = {2};
+char DIR_NAME_STACK[32][8] = {"ROOT\0\0\0\0"};
 uint8_t DIR_STACK_LENGTH = 1;
 
 #define BLACK 0x00
@@ -41,7 +41,7 @@ int strcmp(char *s1, char *s2)
     int i = 0;
     while (s1[i] == s2[i])
     {
-        if (s2[i] == '\0')
+        if (s1[i] == '\0')
         {
             return 0;
         }
@@ -122,11 +122,7 @@ int strcmp(char *s1, char *s2)
 //     return i;
 
 // }
-// void assignStr(char* str, char* input,uint8_t length){
-//     for (uint8_t i=0;i<length;i++){
-//         str[i] = input[i];
-//     }
-// }
+
 // void list_current_directory()
 // {
 //     struct FAT32DirectoryTable current_table;
@@ -196,23 +192,10 @@ int strcmp(char *s1, char *s2)
 //         }
 //     }
 // }
-void exec_command()
+void exec_command(char* buff, int* i)
 {
-    char buff[63];
-    int i = 0;
-    // char intro[10] = "kerop-os$";
-    syscall_user(6, (uint32_t)"kerop-os$", 10, GREEN);
-    char input = 'a';
-    do
-    {
-        syscall_user(4, (uint32_t)&input, 0, 0);
-        if (input != 0 && input != '\n')
-        {
-            buff[i] = input;
-            i += 1;
-        }
-        syscall_user(5, (uint32_t)&input, 0xF, 0);
-    } while (input != '\n');
+   
+
     // syscall_user(5,(uint32_t)&input,0xF,0);
 
     // char cd[2] = "cd";
@@ -223,74 +206,99 @@ void exec_command()
     // char rm[2] = "rm";
     // char mv[2] = "mv";
     // char find[4] = "find";
-    if (strcmp("cd",buff) == 0)
-    {
-        // syscall_user(6, (uint32_t)buff, 2, 0xF);
-        // cd
-    }
-    else if (strcmp("ls",buff) == 0)
-    {
-        // syscall_user(6, (uint32_t) "ls", 2, 0xF);
-    }
-    else if (strcmp("mkdir",buff) == 0)
-    {
-        // mkdir
-    }
-    else if (strcmp("cat",buff) == 0)
-    {
-        // cat
-    }
-    else if (strcmp("cp",buff) == 0)
-    {
-        // cp
-    }
-    else if (strcmp("rm",buff) == 0)
-    {
-        // rm
-    }
-    else if (strcmp("mv",buff) == 0)
-    {
-        // mv
-    }
-    else if (strcmp("find",buff) == 0)
-    {
-        // find
-    }
-    else
-    {
+    if (buff[*i]=='\n'){
+        if (strcmp("cd",buff) == 0)
+        {
+            // syscall_user(6, (uint32_t)buff, 2, 0xF);
+            // cd
+            return;
+
+        }
+        if (strcmp("ls",buff) == 0)
+        {
+            // syscall_user(6, (uint32_t) "ls", 2, 0xF);
+            return;
+
+        }
+        if (strcmp("mkdir",buff) == 0)
+        {
+            // mkdir
+            return;
+
+        }
+        if (strcmp("cat",buff) == 0)
+        {
+            // cat
+            return;
+
+        }
+        if (strcmp("cp",buff) == 0)
+        {
+            // cp
+            return;
+
+        }
+        if (strcmp("rm",buff) == 0)
+        {
+            // rm
+            return;
+
+        }
+        if (strcmp("mv",buff) == 0)
+        {
+            // mv
+            return;
+        }
+        if (strcmp("find",buff) == 0)
+        {
+            // find
+            return;
+        }
+        
         syscall_user(6, (uint32_t)"[ERROR]: Invalid Command !\n", 27, RED);
     }
+    
 }
 int main(void)
 {
-    struct ClusterBuffer cl[2] = {0};
-    struct FAT32DriverRequest request = {
-        .buf = &cl,
-        .name = "shell",
-        .ext = "\0\0\0",
-        .parent_cluster_number = ROOT_CLUSTER_NUMBER,
-        .buffer_size = CLUSTER_SIZE,
-    };
-    int32_t retcode;
-
+        
     syscall_user(7, 0, 0, 0);
-    syscall_user(0, (uint32_t)&request, (uint32_t)&retcode, 0);
-
-    // while (true)
-    // {
-    //     buf = 'a';
-    //     syscall_user(4, (uint32_t)&buf, 0, 0);
-    //     // if (buf){
-
-    //     syscall_user(5, (uint32_t)&buf, 0xF, 0);
-    //     // }
-
-    // }
-    // char buf[256] = "Hugo Ganteng";
-    // syscall_user(6, (uint32_t)&buf,12,0xF);
+    int i = 0;
+    char buff[64];
+    for (;i<64;i++){
+        buff[i] = 0;
+    }
+    i = 0;
+    syscall_user(6, (uint32_t)"kerop-os $ ", 12, GREEN);
     while (true)
     {
-        exec_command();
+        // char intro[10] = "kerop-os$";
+        syscall_user(4, (uint32_t)buff,(uint32_t) i, 0);
+        syscall_user(5, (uint32_t)buff+i, 0xF, 0);
+        if (buff[i]!='\0'){
+            exec_command(buff,&i);
+            if (buff[i]=='\n'){
+                syscall_user(6, (uint32_t)"kerop-os $ ", 12, GREEN);
+                i = 0;
+                for (;i<64;i++){
+                    buff[i] = 0;
+                }
+            }else{
+                i++;
+            }
+        }
+     
+        // char input = 0;
+        // do
+        // {
+        //     syscall_user(4, (uint32_t)&input, 0, 0);
+        //     if (input != 0 && input != '\n')
+        //     {
+        //         buff[i] = input;
+        //         i += 1;
+        //     }
+        //     syscall_user(5, (uint32_t)&input, 0xF, 0);
+        // } while (input != '\n');
     }
 
     return 0;

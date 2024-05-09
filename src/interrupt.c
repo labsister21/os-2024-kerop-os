@@ -82,7 +82,7 @@ void syscall(struct InterruptFrame frame)
             *(struct FAT32DriverRequest *)frame.cpu.general.ebx);
         break;
     case 4:
-        get_keyboard_buffer((char *)frame.cpu.general.ebx);
+        get_keyboard_buffer((char *)frame.cpu.general.ebx + (int) frame.cpu.general.ecx);
         break;
     case 5:
         putchar((char *)frame.cpu.general.ebx, frame.cpu.general.ecx);

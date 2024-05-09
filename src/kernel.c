@@ -94,27 +94,33 @@
 //     }
 // }
 
-/* void kernel_setup(void)
-{
-    load_gdt(&_gdt_gdtr);
-    pic_remap();
-    initialize_idt();
-    framebuffer_clear();
-    framebuffer_set_cursor(0, 0);
-    initialize_filesystem_fat32();
-    activate_keyboard_interrupt();
-    keyboard_state_activate();
-
-    struct FAT32DriverRequest req =
-        {
-            .buf = "wawaaw",
-            .name = "hihuha",
-            .parent_cluster_number = 2,
-            .buffer_size = sizeof(req.buf)};
-    delete(req);
-    while (true)
-        ;
-} */
+// void kernel_setup(void)
+// {
+//     load_gdt(&_gdt_gdtr);
+//     pic_remap();
+//     initialize_idt();
+//     framebuffer_clear();
+//     framebuffer_set_cursor(0, 0);
+//     initialize_filesystem_fat32();
+//     activate_keyboard_interrupt();
+//     keyboard_state_activate();
+//     char text[2048] = "Albert Ghazaly\0";
+//     // struct ClusterBuffer buff;
+    
+//     struct FAT32DriverRequest req =
+//         {
+//             .buf = text,
+//             .name = "hihuh",
+//             .ext = "txt",
+//             .parent_cluster_number = 2,
+//             .buffer_size = 2048};
+//     // write(req);
+//     // read(req);
+//     // read(req);
+//     delete(req);
+//     while (true)
+//         ;
+// } 
 
 // void kernel_setup(void) {
 //     load_gdt(&_gdt_gdtr);
@@ -163,6 +169,7 @@ void kernel_setup(void)
     paging_allocate_user_page_frame(&_paging_kernel_page_directory, (uint8_t *)0);
 
     // Write shell into memory
+    // struct ClusterBuffer buff;
     struct FAT32DriverRequest request = {
         .buf = (uint8_t *)0,
         .name = "shell",

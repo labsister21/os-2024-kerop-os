@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include "header/stdlib/string.h"
 #include "header/filesystem/fat32.h"
+#include "header/driver/disk.h"
 
 static struct FAT32DriverState driver_state;
 const uint8_t fs_signature[BLOCK_SIZE] = {
@@ -113,27 +114,24 @@ uint32_t cluster_to_lba(uint32_t cluster)
  */
 void init_directory_table(struct FAT32DirectoryTable *dir_table, char *name, uint32_t parent_dir_cluster)
 {
-    struct FAT32DirectoryEntry *new_entry = &(dir_table->table[0]);
-    memcpy(&(new_entry->name), name, 8);
-    memcpy(&(new_entry->ext), "\0\0\0", 3);
+    memcpy(dir_table->table->name, name, 8);
+    memcpy(dir_table->table->ext, "\0\0\0", 3);
 
-    new_entry->attribute = ATTR_SUBDIRECTORY;
-    new_entry->user_attribute = UATTR_NOT_EMPTY;
+    dir_table->table[0].attribute = ATTR_SUBDIRECTORY;
+    dir_table->table[0].user_attribute = UATTR_NOT_EMPTY;
 
-    new_entry->undelete = 0;
-    new_entry->create_time = 0;
-    new_entry->create_date = 0;
-    new_entry->access_date = 0;
+    dir_table->table[0].undelete = 0;
+    dir_table->table[0].create_time = 0;
+    dir_table->table[0].create_date = 0;
+    dir_table->table[0].access_date = 0;
 
-    new_entry->cluster_high = (uint16_t)(parent_dir_cluster >> 16);
+    dir_table->table[0].cluster_high = (uint16_t)(parent_dir_cluster >> 16);
 
-    new_entry->modified_time = 0;
-    new_entry->modified_date = 0;
+    dir_table->table[0].modified_time = 0;
+    dir_table->table[0].modified_date = 0;
 
-    new_entry->cluster_low = (uint16_t)(parent_dir_cluster & 0xFFFF);
-    new_entry->filesize = 0;
-
-    dir_table->table[0] = *new_entry;
+    dir_table->table[0].cluster_low = (uint16_t)(parent_dir_cluster & 0xFFFF);
+    dir_table->table[0].filesize = 0;
 }
 /**
  * Checking whether filesystem signature is missing or not in boot sector
@@ -340,7 +338,7 @@ int8_t write(struct FAT32DriverRequest request)
     }
 
     struct FAT32DirectoryTable parent_dir;
-    read_clusters(&parent_dir, request.parent_cluster_number, 1);
+    read_clusters(parent_dir.table, request.parent_cluster_number, 1);
 
     for (uint8_t i = 0; i < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry); i++)
     {
@@ -393,7 +391,7 @@ int8_t write(struct FAT32DriverRequest request)
 
         struct FAT32DirectoryTable newDir;
         init_directory_table(&newDir, request.name, request.parent_cluster_number);
-        write_clusters(&newDir, i, 1);
+        write_clusters(newDir.table, i, 1);
 
         parent_dir.table[n].cluster_high = (uint16_t)((i >> 16) & 0xFFFF);
         parent_dir.table[n].cluster_low = (uint16_t)(i & 0xFFFF);
@@ -436,8 +434,8 @@ int8_t write(struct FAT32DriverRequest request)
         parent_dir.table[n].cluster_high = (uint16_t)((cluster_empty[0] >> 16) & 0xFFFF);
         parent_dir.table[n].cluster_low = (uint16_t)(cluster_empty[0] & 0xFFFF);
     }
-    write_clusters(&driver_state.fat_table, FAT_CLUSTER_NUMBER, 1);
-    write_clusters(&parent_dir, request.parent_cluster_number, 1);
+    write_clusters(driver_state.fat_table.cluster_map, FAT_CLUSTER_NUMBER, 1);
+    write_clusters(parent_dir.table, request.parent_cluster_number, 1);
     return 0;
 }
 
