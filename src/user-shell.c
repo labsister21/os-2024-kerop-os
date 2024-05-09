@@ -200,8 +200,8 @@ void exec_command()
 {
     char buff[63];
     int i = 0;
-    char intro[10] = "kerop-os$";
-    syscall_user(6, (uint32_t)&intro, 10, GREEN);
+    // char intro[10] = "kerop-os$";
+    syscall_user(6, (uint32_t)"kerop-os$", 10, GREEN);
     char input = 'a';
     do
     {
@@ -223,43 +223,42 @@ void exec_command()
     // char rm[2] = "rm";
     // char mv[2] = "mv";
     // char find[4] = "find";
-    if (strcmp(buff, "cd") == 0)
+    if (strcmp("cd",buff) == 0)
     {
-        syscall_user(6, (uint32_t)&buff, 250, 0xF);
+        // syscall_user(6, (uint32_t)buff, 2, 0xF);
         // cd
     }
-    else if (strcmp(buff, "ls") == 0)
+    else if (strcmp("ls",buff) == 0)
     {
-        syscall_user(6, (uint32_t) "ls", 2, 0xF);
+        // syscall_user(6, (uint32_t) "ls", 2, 0xF);
     }
-    else if (strcmp(buff, "mkdir") == 0)
+    else if (strcmp("mkdir",buff) == 0)
     {
         // mkdir
     }
-    else if (strcmp(buff, "cat") == 0)
+    else if (strcmp("cat",buff) == 0)
     {
         // cat
     }
-    else if (strcmp(buff, "cp") == 0)
+    else if (strcmp("cp",buff) == 0)
     {
         // cp
     }
-    else if (strcmp(buff, "rm") == 0)
+    else if (strcmp("rm",buff) == 0)
     {
         // rm
     }
-    else if (strcmp(buff, "mv") == 0)
+    else if (strcmp("mv",buff) == 0)
     {
         // mv
     }
-    else if (strcmp(buff, "find") == 0)
+    else if (strcmp("find",buff) == 0)
     {
         // find
     }
     else
     {
-        char errorMsg[26] = "[ERROR]: Invalid Command !";
-        syscall_user(6, (uint32_t)&errorMsg, 50, RED);
+        syscall_user(6, (uint32_t)"[ERROR]: Invalid Command !\n", 27, RED);
     }
 }
 int main(void)
