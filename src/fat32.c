@@ -113,22 +113,27 @@ uint32_t cluster_to_lba(uint32_t cluster)
  */
 void init_directory_table(struct FAT32DirectoryTable *dir_table, char *name, uint32_t parent_dir_cluster)
 {
+    struct FAT32DirectoryEntry *new_entry = &(dir_table->table[0]);
+    memcpy(&(new_entry->name), name, 8);
+    memcpy(&(new_entry->ext), "\0\0\0", 3);
 
-    struct FAT32DirectoryEntry *self_entry = &(dir_table->table[0]);
-    for (int i = 0; i < 8; i++)
-    {
-        self_entry->name[i] = name[i];
-    }
-    for (int i = 0; i < 3; i++)
-    {
-        self_entry->ext[i] = '\0';
-    }
-    self_entry->attribute = ATTR_SUBDIRECTORY;
-    self_entry->user_attribute = UATTR_NOT_EMPTY;
-    self_entry->cluster_low = parent_dir_cluster;
-    self_entry->cluster_high = (parent_dir_cluster >> 16);
-    self_entry->filesize = 0;
-    dir_table->table[0] = *self_entry;
+    new_entry->attribute = ATTR_SUBDIRECTORY;
+    new_entry->user_attribute = UATTR_NOT_EMPTY;
+
+    new_entry->undelete = 0;
+    new_entry->create_time = 0;
+    new_entry->create_date = 0;
+    new_entry->access_date = 0;
+
+    new_entry->cluster_high = (uint16_t)(parent_dir_cluster >> 16);
+
+    new_entry->modified_time = 0;
+    new_entry->modified_date = 0;
+
+    new_entry->cluster_low = (uint16_t)(parent_dir_cluster & 0xFFFF);
+    new_entry->filesize = 0;
+
+    dir_table->table[0] = *new_entry;
 }
 /**
  * Checking whether filesystem signature is missing or not in boot sector
@@ -150,16 +155,16 @@ bool is_empty_storage(void)
  */
 void create_fat32(void)
 {
-    uint8_t bootsector[BLOCK_SIZE];
-    memset(bootsector, 0, BLOCK_SIZE);
-    memcpy(bootsector, fs_signature, BLOCK_SIZE);
-    write_blocks(bootsector, 0, 1);
+    write_blocks(fs_signature, 0, 1);
+
     driver_state.fat_table.cluster_map[0] = CLUSTER_0_VALUE;
     driver_state.fat_table.cluster_map[1] = CLUSTER_1_VALUE;
     driver_state.fat_table.cluster_map[2] = FAT32_FAT_END_OF_FILE;
 
-    init_directory_table(&(driver_state.dir_table_buf), "ROOT\0\0\0\0", 2);
-    write_clusters(driver_state.fat_table.cluster_map, 2, 1);
+    write_clusters(&driver_state.fat_table, 1, 1);
+
+    init_directory_table(&(driver_state.dir_table_buf), "ROOT\0\0\0\0", ROOT_CLUSTER_NUMBER);
+    write_clusters(&(driver_state.dir_table_buf), ROOT_CLUSTER_NUMBER, 1);
 }
 
 /**
