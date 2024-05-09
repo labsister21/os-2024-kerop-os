@@ -100,6 +100,10 @@ void syscall(struct InterruptFrame frame)
     case 8:
         keyboard_state_deactivate();
         break;
+    case 9:
+        framebuffer_clear();
+        framebuffer_set_cursor(0,0);
+        break;
     }
 }
 

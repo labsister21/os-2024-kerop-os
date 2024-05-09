@@ -175,8 +175,9 @@ void kernel_setup(void)
         .name = "shell",
         .ext = "\0\0\0",
         .parent_cluster_number = ROOT_CLUSTER_NUMBER,
-        .buffer_size = sizeof(request.buf),
+        .buffer_size           = sizeof(request.buf),
     };
+
 
     read(request);
 
