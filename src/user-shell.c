@@ -155,25 +155,8 @@ void mkdir_command(char *dirname, uint32_t parent_cluster_number)
     
     syscall_user(2, (uint32_t)&request, 0, 0);
 }
-void exec_command(char* buff, int* i)
+void exec_command(char* buff)
 {
-    // char buff[MAX_INPUT_BUFFER];
-    // int i = 0;
-    // syscall_user(6, (uint32_t) "kerop-os$", 10, GREEN);
-    // char input = 'a';
-    // do
-    // {
-    //     syscall_user(4, (uint32_t)&input, 0, 0);
-    //     if (input != 0 && input != '\n')
-    //     {
-    //         buff[i] = input;
-    //         i += 1;
-    //     }
-    //     syscall_user(5, (uint32_t)&input, 0xF, 0);
-    // } while (input != '\n');
-
-    // Null-terminate the input buffer
-    // buff[i] = '\0';
     // Parse the input buffer for command and arguments
     char *args[MAX_ARGS];
     int argc = 0;
@@ -184,15 +167,6 @@ void exec_command(char* buff, int* i)
         token = strtok(NULL, " ");
     }
 
-    // syscall_user(5,(uint32_t)&input,0xF,0);
-    // char cd[2] = "cd";
-    // char ls[2] = "ls";
-    // char mkdir[5] = "mkdir";
-    // char cat[3] = "cat";
-    // char cp[2] = "cp";
-    // char rm[2] = "rm";
-    // char mv[2] = "mv";
-    // char find[4] = "find";
     // Execute command based on input
     if (strcmp("cd", args[0]) == 0)
     {
@@ -227,7 +201,6 @@ void exec_command(char* buff, int* i)
         syscall_user(6, (uint32_t) "[ERROR]: Invalid Command !\n", 28, RED);
     }
     memset(buff, 0, MAX_INPUT_BUFFER);
-    *i = 0;
     syscall_user(6, (uint32_t)"kerop-os $ ", 12, GREEN);
     
 }
@@ -246,7 +219,7 @@ int main(void)
         syscall_user(5, (uint32_t)buff+i, 0xF, 0);
         if (buff[i]!='\0'){
             if (buff[i]=='\n'){
-                exec_command(buff,&i);
+                exec_command(buff);
             }else{
                 i++;
             }

@@ -104,20 +104,44 @@
 //     initialize_filesystem_fat32();
 //     activate_keyboard_interrupt();
 //     keyboard_state_activate();
-//     char text[2048] = "Albert Ghazaly\0";
+//     // char text[2048] = "Albert Ghazaly\0";
 //     // struct ClusterBuffer buff;
     
 //     struct FAT32DriverRequest req =
 //         {
-//             .buf = text,
-//             .name = "hihuh",
+//             .buf = "Albert Ghazaly",
+//             .name = "Albert",
 //             .ext = "txt",
 //             .parent_cluster_number = 2,
-//             .buffer_size = 2048};
-//     // write(req);
+//             .buffer_size = 15};
+//          write(req);
+//     struct FAT32DriverRequest req2 =
+//             {
+//                 .name = "Member1",
+//                 .ext = "\0\0\0",
+//                 .parent_cluster_number = 2,
+//                 .buffer_size = 0};
+//         write(req2);
+//     struct FAT32DriverRequest req3 =
+//         {
+//             .buf = "Hugo Sabam Augusto",
+//             .name = "Hugo",
+//             .ext = "txt",
+//             .parent_cluster_number = 4,
+//             .buffer_size = 19};
+//     write(req3);
 //     // read(req);
 //     // read(req);
-//     delete(req);
+//     delete(req3);
+//     delete(req2);
+//        struct FAT32DriverRequest req4 =
+//         {
+//             .buf = "Muhammad Zaki Arta",
+//             .name = "Zaki",
+//             .ext = "txt",
+//             .parent_cluster_number = 2,
+//             .buffer_size = 19};
+//     write(req4);
 //     while (true)
 //         ;
 // } 
@@ -154,7 +178,7 @@
 // }
 void kernel_setup(void)
 {
-    load_gdt(&_gdt_gdtr);
+    load_gdt(&_gdt_gdtr); 
     pic_remap();
     initialize_idt();
     activate_keyboard_interrupt();
