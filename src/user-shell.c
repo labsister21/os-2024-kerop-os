@@ -126,17 +126,19 @@ int atoi(const char *str)
     return result * sign;
 }
 
+
+// Kalo udah byte gede banget, strcmp kurang efektif, mending memcmp aja -hugo
 int strcmp(char *s1, char *s2)
 {
     int i = 0;
    
     do{
-        if (s1[i] != s2[i])
+        if (s1[i] != s2[i] )
         {
             return s1[i] - s2[i];
         }
         i++;
-    } while (s1[i] != '\0');
+    } while (s2[i] != '\n' || s2[i] != '\0');
 
     return 0;
 
@@ -160,23 +162,30 @@ void exec_command(char* buff)
     // Parse the input buffer for command and arguments
     char *args[MAX_ARGS];
     int argc = 0;
-    char *token = strtok(buff, " ");
+    char delim[1] = " ";
+    char *token = strtok(buff, delim);
     while (token != NULL && argc < MAX_ARGS)
     {
         args[argc++] = token;
-        token = strtok(NULL, " ");
+        token = strtok(NULL, delim);
     }
+    char cd[2] = "cd";
+    char ls[2] = "ls";
+    char mkdir[5] = "mkdir";
+    char cat[3] = "cat";
+    char cls[3] = "cls";
 
-    // Execute command based on input
-    if (strcmp("cd", args[0]) == 0)
+    
+
+    if (memcmp(args[0],cd,2) == 0)
     {
         // Handle cd command
     }
-    else if (strcmp("ls", args[0]) == 0)
+    else if (memcmp(args[0],ls,2) == 0)
     {
         // Handle ls command
     }
-    else if (strcmp("mkdir", args[0]) == 0)
+    else if (memcmp(args[0],mkdir,5) == 0)
     {
         if (argc >= 2)
         {
@@ -186,22 +195,27 @@ void exec_command(char* buff)
         }
         else
         {
-        
-            syscall_user(6, (uint32_t) "[ERROR]: Usage: mkdir <dirname>\n", 33, RED);
+            char errorcode[33] = "[ERROR]: Usage: mkdir <dirname>\n";
+            syscall_user(6, (uint32_t) errorcode, 33, RED);
         }
     }
-    else if (strcmp("cat", args[0]) == 0)
+    else if (memcmp(args[0],cat,3) == 0)
     {
         // Handle cat command
     }
-    // Add other commands here...
+    else if(memcmp(args[0],cls,3) == 0){
+        syscall_user(9,0,0,0);
+    }
+
 
     else
     {
-        syscall_user(6, (uint32_t) "[ERROR]: Invalid Command !\n", 28, RED);
+        char errorcode2[28] = "[ERROR]: Invalid Command !\n";
+        syscall_user(6, (uint32_t) errorcode2, 28, RED);
     }
     memset(buff, 0, MAX_INPUT_BUFFER);
-    syscall_user(6, (uint32_t)"kerop-os $ ", 12, GREEN);
+    char intro[12] = "kerop-os $ ";
+    syscall_user(6, (uint32_t)intro, 12, GREEN);
     
 }
 int main(void)
@@ -211,7 +225,8 @@ int main(void)
     int i = 0;
     char buff[MAX_INPUT_BUFFER];
     memset(buff, 0, MAX_INPUT_BUFFER);
-    syscall_user(6, (uint32_t)"kerop-os $ ", 12, GREEN);
+    char intro[12] = "kerop-os $ ";
+    syscall_user(6, (uint32_t)intro, 12, GREEN);
     while (true)
     {
         // char intro[10] = "kerop-os$";
@@ -220,6 +235,7 @@ int main(void)
         if (buff[i]!='\0'){
             if (buff[i]=='\n'){
                 exec_command(buff);
+                i = 0;
             }else{
                 i++;
             }
