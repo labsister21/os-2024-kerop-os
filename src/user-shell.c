@@ -5,7 +5,7 @@
 #include "header/driver/disk.h"
 #include "header/driver/keyboard.h"
 
-#define MAX_DIR_STACK_SIZE 32
+#define MAX_DIR_STACK_SIZE 16
 #define BLACK 0x00
 #define DARK_BLUE 0x01
 #define DARK_GREEN 0x2
@@ -119,7 +119,6 @@ int atoi(const char *str)
     return result * sign;
 }
 
-// Kalo udah byte gede banget, strcmp kurang efektif, mending memcmp aja -hugo
 int strcmp(char *s1, char *s2)
 {
     int i = 0;
@@ -163,6 +162,7 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index)
         .ext = "\0\0\0",
         .buffer_size = 0,
     };
+
     if (strcmp(dirname, "..") == 0)
     {
         if (*dir_stack_index <= 0)
@@ -187,19 +187,26 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index)
 
         int8_t retcode;
         syscall_user(1, (uint32_t)&request, (uint32_t)&retcode, 0);
+        syscall_user(10, (uint32_t)&req_table, dir_stack[*dir_stack_index], 0);
 
         if (retcode != 0)
         {
             char err[18] = "INVALID DIRECTORY\n";
-            syscall_user(6, (uint32_t)err , 18, RED);
+            syscall_user(6, (uint32_t)err, 18, RED);
             return;
         }
+        for (uint32_t i = 0; i < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry); i++)
+        {
+            if (strcmp(req_table.table[i].name, request.name) == 0)
 
-        (*dir_stack_index)++;
-        dir_stack[*dir_stack_index] = req_table.table[0].cluster_high << 16 | req_table.table[0].cluster_low;
-
-        
-        dir_stack[*dir_stack_index] = dir_stack[*dir_stack_index];
+            {
+                if (req_table.table[i].attribute == ATTR_SUBDIRECTORY && req_table.table[i].filesize == 0)
+                {
+                    (*dir_stack_index)++;
+                    dir_stack[*dir_stack_index] = (req_table.table[i].cluster_high << 16) | req_table.table[i].cluster_low;
+                }
+            }
+        }
     }
 }
 
@@ -257,7 +264,7 @@ void exec_command(char *buff, uint32_t *dir_stack, uint8_t *dir_stack_index)
         char errorcode2[28] = "[ERROR]: Invalid Command !\n";
         syscall_user(6, (uint32_t)errorcode2, 28, RED);
     }
-    for ( int8_t i = 0; i < MAX_INPUT_BUFFER; i++)
+    for (int8_t i = 0; i < MAX_INPUT_BUFFER; i++)
     {
         buff[i] = 0x0;
     }
@@ -267,8 +274,9 @@ void exec_command(char *buff, uint32_t *dir_stack, uint8_t *dir_stack_index)
 
 int main(void)
 {
-    uint32_t DIR_NUMBER_STACK[MAX_DIR_STACK_SIZE] = {ROOT_CLUSTER_NUMBER};
+    uint32_t DIR_NUMBER_STACK[MAX_DIR_STACK_SIZE];
     uint8_t DIR_STACK_INDEX = 0;
+    DIR_NUMBER_STACK[DIR_STACK_INDEX] = ROOT_CLUSTER_NUMBER;
 
     syscall_user(7, 0, 0, 0);
     int i = 0;

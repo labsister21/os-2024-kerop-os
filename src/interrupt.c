@@ -104,6 +104,9 @@ void syscall(struct InterruptFrame frame)
         framebuffer_clear();
         framebuffer_set_cursor(0,0);
         break;
+    case 10:
+        read_clusters((struct FAT32DirectoryTable*) frame.cpu.general.ebx,(uint32_t)frame.cpu.general.ecx,1);
+        break;
     }
 }
 
