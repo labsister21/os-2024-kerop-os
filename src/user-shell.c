@@ -153,15 +153,15 @@ void mkdir_command(char *dirname, uint32_t parent_cluster_number)
 
     syscall_user(2, (uint32_t)&request, 0, 0);
 }
-void ls(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8]){
-    struct FAT32DirectoryTable now_table;
-    struct FAT32DriverRequest req={
-        .buf = &now_table,
-        .ext = "\0\0\0",
-        .buffer_size = 0,
+// void ls(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8]){
+//     struct FAT32DirectoryTable now_table;
+//     struct FAT32DriverRequest req={
+//         .buf = &now_table,
+//         .ext = "\0\0\0",
+//         .buffer_size = 0,
 
-    };
-}
+//     };
+// }
 void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
 
 {
