@@ -1,12 +1,29 @@
-#include "header/process/process.h"
 #include "header/memory/paging.h"
 #include "header/stdlib/string.h"
 #include "header/cpu/gdt.h"
+#include "header/process/process.h"
+
+struct ProcessControlBlock _process_list[PROCESS_COUNT_MAX] = {0};
 
 // Add the missing declaration of process_manager_state
 static struct  ProcessManagerState process_manager_state = {
+    .list_of_process = {false},
     .active_process_count = 0
 };
+
+uint32_t process_list_get_inactive_index(){
+    for(int i = 0; i < PROCESS_COUNT_MAX; i++){
+        if(!process_manager_state.list_of_process[i]){
+            return i;
+        }
+    }
+    return -1;
+}
+
+uint32_t ceil_div(uint32_t request, uint32_t target){
+    float result = (float) request / target;
+    return (result == (int) result) ? (int) result : (int) result + 1;
+}
 
 /**
  * Get currently running process PCB pointer
@@ -49,8 +66,10 @@ int32_t process_create_user_process(struct FAT32DriverRequest request) {
     // Process PCB 
     int32_t p_index = process_list_get_inactive_index();
     struct ProcessControlBlock *new_pcb = &(_process_list[p_index]);
+    process_manager_state.list_of_process[p_index] = true;
+    process_manager_state.active_process_count++;
 
-    new_pcb->metadata.pid = process_generate_new_pid();
+    new_pcb->metadata.pid = p_index;
 
     // Membuatan virtual address space baru dengan page directory
     struct PageDirectory *new_page_dir = paging_create_new_page_directory();
@@ -66,13 +85,16 @@ int32_t process_create_user_process(struct FAT32DriverRequest request) {
     // Setelah virtual memory untuk process telah dialokasikan, untuk sementara ganti page directory ke virtual address space baru dan lakukan pembacaan executable dari file system ke memory. Kembalikan virtual address space ke sebelum proses load executable setelah operasi file system selesai.
 
     struct PageDirectory *prev_page_dir = paging_get_current_page_directory_addr();
-    paging_switch_page_directory(new_page_dir);
+    paging_use_page_directory(new_page_dir);
+
+    paging_allocate_user_page_frame(new_page_dir,0);
+    paging_allocate_user_page_frame(new_page_dir,(void*) 0xBFFFFFFC);
 
     // Load executable to memory
     read(request);
 
     // Restore previous page directory
-    paging_switch_page_directory(prev_page_dir);
+    paging_use_page_directory(prev_page_dir);
 
     // Set up process context
     new_pcb->context.eip = (uint32_t) request.buf;
@@ -87,9 +109,8 @@ int32_t process_create_user_process(struct FAT32DriverRequest request) {
 
     // Set up metadata
     new_pcb->metadata.state = READY;
-    strcpy(new_pcb->metadata.name, request.name);
-
-    process_manager_state.active_process_count++;
+    memset(new_pcb->metadata.name, 0, PROCESS_NAME_LENGTH_MAX);
+    memcpy(new_pcb->metadata.name, request.name, 8);
 
 exit_cleanup:
     return retcode;
