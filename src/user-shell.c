@@ -153,29 +153,94 @@ void mkdir_command(char *dirname, uint32_t parent_cluster_number)
 
     syscall_user(2, (uint32_t)&request, 0, 0);
 }
-// void ls(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8]){
-//     struct FAT32DirectoryTable now_table;
-//     struct FAT32DriverRequest req={
-//         .buf = &now_table,
-//         .ext = "\0\0\0",
-//         .buffer_size = 0,
+void ls(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
+{
+    struct FAT32DirectoryTable now_table;
+    struct FAT32DriverRequest req = {
+        .buf = &now_table,
+        .ext = "\0\0\0",
+        .buffer_size = 0,
 
-//     };
-// }
+    };
+
+    // ambil nama folder di stack skrg
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        req.name[i] = dir_name_stack[*dir_stack_index-1][i];
+    }
+
+    if (*dir_stack_index <= 1)
+    {
+        req.parent_cluster_number = ROOT_CLUSTER_NUMBER;
+    }
+    else
+    {
+        req.parent_cluster_number = dir_stack[*dir_stack_index-2];
+    }
+
+    // read cd
+    int8_t errorcde;
+    syscall_user(1, (uint32_t)&req, (uint32_t)&errorcde, 0);
+    if (errorcde == 0)
+    {
+        for (uint32_t i = 1; i < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry);
+             i++)
+        {
+            if (now_table.table[i].user_attribute == UATTR_NOT_EMPTY)
+            {
+                char filename[9];
+                for (int j = 0; j < 8; j++)
+                {
+                    filename[j] = now_table.table[i].name[j];
+                }
+                filename[8] = '\0';
+                //Kalo file
+                if (now_table.table[i].attribute == ATTR_ARCHIVE)
+                {
+                    syscall_user(6, (uint32_t)filename, 8, WHITE);
+
+                    if (now_table.table[i].ext[0] != '\0')
+                    {
+                        char ext_name[4];
+                        for (int j = 0; j < 3; j++)
+                        {
+                            ext_name[j] = now_table.table[i].ext[j];
+                        }
+                        ext_name[3] = '\0';
+
+                        syscall_user(6, (uint32_t) ".", 1, WHITE);
+                        syscall_user(6, (uint32_t)ext_name, 3, WHITE);
+                    }
+                }
+
+                //Kalo folder
+                else
+                {
+                    syscall_user(6, (uint32_t)filename, 8, LIGHT_PURPLE);
+                }
+
+                syscall_user(6, (uint32_t) " ", 1, WHITE);
+            }
+        }
+    }else{
+        syscall_user(6,(uint32_t)"ERROR!\n",7,RED);
+    }
+    syscall_user(6, (uint32_t)"\n", 1, WHITE);
+}
 void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
 
 {
     struct FAT32DirectoryTable req_table;
     struct FAT32DriverRequest request = {
         .buf = &req_table,
-        .parent_cluster_number = dir_stack[*dir_stack_index],
+        .parent_cluster_number = dir_stack[*dir_stack_index-1],
         .ext = "\0\0\0",
         .buffer_size = 0,
     };
     char ddot[2] = "..";
     if (strcmp(dirname, ddot) == 0)
     {
-        if (*dir_stack_index <= 0)
+        if (*dir_stack_index <= 1)
         {
             return;
         }
@@ -197,7 +262,7 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
 
         int8_t retcode;
         syscall_user(1, (uint32_t)&request, (uint32_t)&retcode, 0);
-        syscall_user(10, (uint32_t)&req_table, dir_stack[*dir_stack_index], 0);
+        syscall_user(10, (uint32_t)&req_table, dir_stack[*dir_stack_index-1], 0);
 
         if (retcode != 0)
         {
@@ -216,30 +281,31 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
             {
                 if (req_table.table[i].attribute == ATTR_SUBDIRECTORY && req_table.table[i].filesize == 0)
                 {
-                    (*dir_stack_index)++;
+                    
                     dir_stack[*dir_stack_index] = (req_table.table[i].cluster_high << 16) | req_table.table[i].cluster_low;
+                    (*dir_stack_index)++;
                 }
             }
         }
     }
 }
 
-
-void exec_command( uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
+void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
 
 {
     char buff[MAX_INPUT_BUFFER];
     int i = 0;
     char input = 'a';
-    do{
+    do
+    {
         syscall_user(4, (uint32_t)&input, 0, 0);
-        if (input!=0 && input != '\n'){
+        if (input != 0 && input != '\n')
+        {
             buff[i] = input;
-            i+=1;
+            i += 1;
         }
-        syscall_user(5,(uint32_t)&input,0xF,0);
-    }while(input!='\n');
-
+        syscall_user(5, (uint32_t)&input, 0xF, 0);
+    } while (input != '\n');
 
     char *args[MAX_ARGS];
     int argc = 0;
@@ -250,27 +316,26 @@ void exec_command( uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_nam
         args[argc++] = token;
         token = strtok(NULL, delim);
     }
-    char cd[2] = "cd";
-    char ls[2] = "ls";
-    char mkdir[5] = "mkdir";
+    // char cd[2] = "cd";
+    // char mkdir[5] = "mkdir";
     char cat[3] = "cat";
     char cls[3] = "cls";
 
-    if (strcmp(args[0], cd) == 0)
+    if (strcmp(args[0], "cd") == 0)
     {
         char *dirname = args[1];
         cede(dirname, dir_stack, dir_stack_index, dir_name_stack);
     }
-    else if (strcmp(args[0], ls) == 0)
+    else if (strcmp(args[0], "ls") == 0)
     {
-        // Handle ls command
+        ls(dir_stack,dir_stack_index,dir_name_stack);
     }
-    else if (strcmp(args[0], mkdir) == 0)
+    else if (strcmp(args[0], "mkdir") == 0)
     {
         if (argc >= 2)
         {
             char *dirname = args[1];
-            mkdir_command(dirname, dir_stack[*dir_stack_index]);
+            mkdir_command(dirname, dir_stack[*dir_stack_index-1]);
         }
         else
         {
@@ -301,12 +366,12 @@ void exec_command( uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_nam
 int main(void)
 {
     uint32_t DIR_NUMBER_STACK[MAX_DIR_STACK_SIZE];
-    char DIR_NAME_STACK[MAX_DIR_STACK_SIZE][8];
-    uint8_t DIR_STACK_INDEX = 0;
-    DIR_NUMBER_STACK[DIR_STACK_INDEX] = ROOT_CLUSTER_NUMBER;
+    char DIR_NAME_STACK[MAX_DIR_STACK_SIZE][8] ={"ROOT\0\0\0\0"};
+    DIR_NUMBER_STACK[0] = ROOT_CLUSTER_NUMBER;
+    uint8_t DIR_STACK_INDEX = 1;
+
 
     syscall_user(7, 0, 0, 0);
-
 
     while (true)
     {
@@ -319,15 +384,15 @@ int main(void)
             for (int j = 0; j < 8; j++)
             {
                 path[j] = DIR_NAME_STACK[i][j];
-
             }
 
-            syscall_user(6,(uint32_t)path,8,DARK_GREEN); 
-            syscall_user(6,(uint32_t)"/",1,GREEN);
+            syscall_user(6, (uint32_t)path, 8, DARK_GREEN);
+            syscall_user(6, (uint32_t) "/", 1, GREEN);
         }
-        syscall_user(6,(uint32_t)dolar,3,GREEN);
+        syscall_user(6, (uint32_t)dolar, 3, GREEN);
+       
 
-        exec_command(DIR_NUMBER_STACK, &DIR_STACK_INDEX,DIR_NAME_STACK);
+        exec_command(DIR_NUMBER_STACK, &DIR_STACK_INDEX, DIR_NAME_STACK);
     }
 
     return 0;
