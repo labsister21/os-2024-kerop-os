@@ -9,7 +9,11 @@
     "fat32.h": "c",
     "keyboard.h": "c",
     "interrupt.h": "c",
-    "process.h": "c"
+    "framebuffer.h": "c",
+    "stdlib.h": "c",
+    "stdbool.h": "c",
+    "string.h": "c",
+    "stddef.h": "c"
   },
   "C_Cpp_Runner.cCompilerPath": "gcc",
   "C_Cpp_Runner.cppCompilerPath": "g++",
