@@ -237,7 +237,8 @@ int8_t read_directory(struct FAT32DriverRequest request)
             {
 
                 struct FAT32DirectoryTable reqDirectory;
-                read_clusters(&reqDirectory, (dir_table.table[i].cluster_high << 16) | dir_table.table[i].cluster_low, 1);
+                uint32_t cn = (dir_table.table[i].cluster_high << 16) | dir_table.table[i].cluster_low;
+                read_clusters(&reqDirectory,cn , 1);
                 memcpy(request.buf, &reqDirectory, sizeof(struct FAT32DirectoryTable));
                 return 0;
             }
@@ -273,7 +274,7 @@ int8_t read(struct FAT32DriverRequest request)
     struct FAT32DirectoryTable parent_table;
     read_clusters(&parent_table, request.parent_cluster_number, 1);
 
-    for (uint32_t i = 0; i < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry); i++)
+    for (uint32_t i = 1; i < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry); i++)
     {
         if (memcmp(request.name, parent_table.table[i].name, 8) == 0 && memcmp(request.ext, parent_table.table[i].ext, 3) == 0)
         {

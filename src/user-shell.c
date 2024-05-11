@@ -153,7 +153,17 @@ void mkdir_command(char *dirname, uint32_t parent_cluster_number)
 
     syscall_user(2, (uint32_t)&request, 0, 0);
 }
-void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index)
+void ls(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8]){
+    struct FAT32DirectoryTable now_table;
+    struct FAT32DriverRequest req={
+        .buf = &now_table,
+        .ext = "\0\0\0",
+        .buffer_size = 0,
+
+    };
+}
+void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
+
 {
     struct FAT32DirectoryTable req_table;
     struct FAT32DriverRequest request = {
@@ -162,8 +172,8 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index)
         .ext = "\0\0\0",
         .buffer_size = 0,
     };
-
-    if (strcmp(dirname, "..") == 0)
+    char ddot[2] = "..";
+    if (strcmp(dirname, ddot) == 0)
     {
         if (*dir_stack_index <= 0)
         {
@@ -195,6 +205,10 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index)
             syscall_user(6, (uint32_t)err, 18, RED);
             return;
         }
+        for (uint8_t j = 0; j < 8; j++)
+        {
+            dir_name_stack[*dir_stack_index][j] = dirname[j];
+        }
         for (uint32_t i = 0; i < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry); i++)
         {
             if (strcmp(req_table.table[i].name, request.name) == 0)
@@ -210,9 +224,23 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index)
     }
 }
 
-void exec_command(char *buff, uint32_t *dir_stack, uint8_t *dir_stack_index)
+
+void exec_command( uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
+
 {
-    // Parse the input buffer for command and arguments
+    char buff[MAX_INPUT_BUFFER];
+    int i = 0;
+    char input = 'a';
+    do{
+        syscall_user(4, (uint32_t)&input, 0, 0);
+        if (input!=0 && input != '\n'){
+            buff[i] = input;
+            i+=1;
+        }
+        syscall_user(5,(uint32_t)&input,0xF,0);
+    }while(input!='\n');
+
+
     char *args[MAX_ARGS];
     int argc = 0;
     char delim[1] = " ";
@@ -231,7 +259,7 @@ void exec_command(char *buff, uint32_t *dir_stack, uint8_t *dir_stack_index)
     if (strcmp(args[0], cd) == 0)
     {
         char *dirname = args[1];
-        cede(dirname, dir_stack, dir_stack_index);
+        cede(dirname, dir_stack, dir_stack_index, dir_name_stack);
     }
     else if (strcmp(args[0], ls) == 0)
     {
@@ -268,42 +296,38 @@ void exec_command(char *buff, uint32_t *dir_stack, uint8_t *dir_stack_index)
     {
         buff[i] = 0x0;
     }
-    char intro[12] = "kerop-os $ ";
-    syscall_user(6, (uint32_t)intro, 12, GREEN);
 }
 
 int main(void)
 {
     uint32_t DIR_NUMBER_STACK[MAX_DIR_STACK_SIZE];
+    char DIR_NAME_STACK[MAX_DIR_STACK_SIZE][8];
     uint8_t DIR_STACK_INDEX = 0;
     DIR_NUMBER_STACK[DIR_STACK_INDEX] = ROOT_CLUSTER_NUMBER;
 
     syscall_user(7, 0, 0, 0);
-    int i = 0;
-    char buff[MAX_INPUT_BUFFER];
-    for (;i<MAX_INPUT_BUFFER;i++){
-        buff[i] = 0;
-    }
-    i = 0;   
-    char intro[12] = "kerop-os $ ";
-    syscall_user(6, (uint32_t)intro, 12, GREEN);
+ 
+    
     while (true)
     {
-        syscall_user(4, (uint32_t)buff, (uint32_t)i, 0);
-        syscall_user(5, (uint32_t)buff + i, 0xF, 0);
-        if (buff[i] != '\0')
+        char intro[10] = "kerop-os/";
+        char dolar[3] = " $ ";
+        syscall_user(6, (uint32_t)intro, 10, GREEN);
+        for (int i = 0; i < DIR_STACK_INDEX; i++)
         {
-            if (buff[i] == '\n')
+            char path[8];
+            for (int j = 0; j < 8; j++)
             {
-                buff[i] = 0;
-                exec_command(buff, DIR_NUMBER_STACK, &DIR_STACK_INDEX); // Pass the address of DIR_STACK_INDEX
-                i = 0;
+                path[j] = DIR_NAME_STACK[i][j];
+
             }
-            else
-            {
-                i++;
-            }
+            
+            syscall_user(6,(uint32_t)path,8,DARK_GREEN); 
+            syscall_user(6,(uint32_t)"/",1,GREEN);
         }
+        syscall_user(6,(uint32_t)dolar,3,GREEN);
+        
+        exec_command(DIR_NUMBER_STACK, &DIR_STACK_INDEX,DIR_NAME_STACK);
     }
 
     return 0;
