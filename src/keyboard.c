@@ -1079,7 +1079,7 @@ void keyboard_isr(void)
         return;
       }
       pic_ack(1);
-      keyboard_state.keyboard_buffer = keyboard_scancode_1_to_ascii_map[scancode];
+      keyboard_state.keyboard_buffer = keyboard_scancode_4_to_ascii_map[scancode];
     }
     else if (isShift && !isCapsLock)
     {
@@ -1148,7 +1148,7 @@ void keyboard_isr(void)
         return;
       }
       pic_ack(1);
-      keyboard_state.keyboard_buffer = keyboard_scancode_4_to_ascii_map[scancode];
+      keyboard_state.keyboard_buffer = keyboard_scancode_1_to_ascii_map[scancode];
     }
   }
 }

@@ -105,8 +105,7 @@
 //     activate_keyboard_interrupt();
 //     keyboard_state_activate();
 //     // char text[2048] = "Albert Ghazaly\0";
-//     // struct ClusterBuffer buff;
-    
+//     struct ClusterBuffer buff;
 //     struct FAT32DriverRequest req =
 //         {
 //             .buf = "Albert Ghazaly",
@@ -124,11 +123,11 @@
 //         write(req2);
 //     struct FAT32DriverRequest req3 =
 //         {
-//             .buf = "Hugo Sabam Augusto",
+//             .buf = buff.buf,
 //             .name = "Hugo",
-//             .ext = "txt",
+//             .ext = "\0\0\0",
 //             .parent_cluster_number = 4,
-//             .buffer_size = 19};
+//             .buffer_size = 0};
 //     write(req3);
 //     // read(req);
 //     // read(req);

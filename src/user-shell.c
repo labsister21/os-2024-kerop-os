@@ -281,6 +281,10 @@ int main(void)
     syscall_user(7, 0, 0, 0);
     int i = 0;
     char buff[MAX_INPUT_BUFFER];
+    for (;i<MAX_INPUT_BUFFER;i++){
+        buff[i] = 0;
+    }
+    i = 0;   
     char intro[12] = "kerop-os $ ";
     syscall_user(6, (uint32_t)intro, 12, GREEN);
     while (true)
@@ -291,7 +295,7 @@ int main(void)
         {
             if (buff[i] == '\n')
             {
-                buff[i] = 0x0;
+                buff[i] = 0;
                 exec_command(buff, DIR_NUMBER_STACK, &DIR_STACK_INDEX); // Pass the address of DIR_STACK_INDEX
                 i = 0;
             }

@@ -57,8 +57,17 @@ void putchar(char* ebx, uint8_t ecx)
     // int offset = c.row * 80 + c.col;
     // if (kata>=0x20 && kata<=0x79){
         if (kata!='\n'){
-            framebuffer_write(c.row, c.col, kata, ecx, 0);
-            newcol += 1;
+            if (kata!='\b'){
+                framebuffer_write(c.row, c.col, kata, ecx, 0);
+                newcol += 1;
+            }else{
+                if (newcol > 12){
+                    newcol -= 1;
+                    framebuffer_write(c.row, newcol, 0, ecx, 0);
+                }
+                
+            }
+            
         }else{
             newrow += 1;
             newcol = 0;
@@ -74,8 +83,6 @@ void putchar(char* ebx, uint8_t ecx)
                 }
         }
     // }
-   
-    
 }
 void puts(char *ebx, uint8_t length, uint8_t textcolor)
 {
