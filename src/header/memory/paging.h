@@ -14,6 +14,8 @@
 // Maximum usable page frame. Default count: 128 / 4 = 32 page frame
 #define PAGE_FRAME_MAX_COUNT ((SYSTEM_MEMORY_MB << 20) / PAGE_FRAME_SIZE)
 
+// Maximum count of page directory table entry
+#define PAGING_DIRECTORY_TABLE_MAX_COUNT 32
 // Operating system page directory, using page size PAGE_FRAME_SIZE (4 MiB)
 extern struct PageDirectory _paging_kernel_page_directory;
 
@@ -86,8 +88,7 @@ struct PageDirectory {
 struct PageManagerState {
     bool     page_frame_map[PAGE_FRAME_MAX_COUNT];
     uint32_t free_page_frame_count;
-    uint32_t last_index_available;
-    // TODO: Add if needed ...^
+    // TODO: Add if needed ...
 } __attribute__((packed));
 
 
@@ -146,5 +147,38 @@ bool paging_allocate_user_page_frame(struct PageDirectory *page_dir, void *virtu
  * @return              Will return true if success, false otherwise
  */
 bool paging_free_user_page_frame(struct PageDirectory *page_dir, void *virtual_addr);
+
+/* --- Process-related Memory Management --- */
+
+/**
+ * Create new page directory prefilled with 1 page directory entry for kernel higher half mapping
+ * 
+ * @return Pointer to page directory virtual address. Return NULL if allocation failed
+ */
+struct PageDirectory* paging_create_new_page_directory(void);
+
+/**
+ * Free page directory and delete all page directory entry
+ * 
+ * @param page_dir Pointer to page directory virtual address
+ * @return         True if free operation success 
+ */
+bool paging_free_page_directory(struct PageDirectory *page_dir);
+
+/**
+ * Get currently active page directory virtual address from CR3 register
+ * 
+ * @note   Assuming page directories lives in kernel memory
+ * @return Page directory virtual address currently active (CR3)
+ */
+struct PageDirectory* paging_get_current_page_directory_addr(void);
+
+/**
+ * Change active page directory (indirectly trigger TLB flush for all non-global entry)
+ * 
+ * @note                        Assuming page directories lives in kernel memory
+ * @param page_dir_virtual_addr Page directory virtual address to switch into
+ */
+void paging_use_page_directory(struct PageDirectory *page_dir_virtual_addr);
 
 #endif
