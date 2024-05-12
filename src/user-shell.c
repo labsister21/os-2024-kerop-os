@@ -246,8 +246,11 @@ void mkdir_command(char *dirname, uint32_t parent_cluster_number)
     }
     request.parent_cluster_number = parent_cluster_number;
     request.buffer_size = 0;
-
-    syscall_user(2, (uint32_t)&request, 0, 0);
+    int8_t retcode;
+    syscall_user(2, (uint32_t)&request, (uint32_t)&retcode, 0);
+    if (retcode!=0){
+        syscall_user(6, (uint32_t)"[ERROR] FAILED TO MAKE DIR\n", 27, RED);
+    }
 }
 
 void custom_strcpy(char *dest, const char *src)

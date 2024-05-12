@@ -342,7 +342,7 @@ int8_t write(struct FAT32DriverRequest request)
     read_clusters(driver_state.cluster_buf.buf, request.parent_cluster_number, 1);
     memcpy(parent_dir.table,driver_state.cluster_buf.buf,sizeof(driver_state.cluster_buf.buf));
 
-    for (uint8_t i = 0; i < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry); i++)
+    for (uint8_t i = 1; i < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry); i++)
     {
 
         if (memcmp(parent_dir.table[i].name, request.name, 8) == 0)
