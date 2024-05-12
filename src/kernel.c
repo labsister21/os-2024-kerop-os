@@ -95,27 +95,43 @@
 //     }
 // }
 
-/* void kernel_setup(void)
-{
-    load_gdt(&_gdt_gdtr);
-    pic_remap();
-    initialize_idt();
-    framebuffer_clear();
-    framebuffer_set_cursor(0, 0);
-    initialize_filesystem_fat32();
-    activate_keyboard_interrupt();
-    keyboard_state_activate();
+//  void kernel_setup(void)
+// {
+//     load_gdt(&_gdt_gdtr);
+//     pic_remap();
+//     initialize_idt();
+//     framebuffer_clear();
+//     framebuffer_set_cursor(0, 0);
+//     initialize_filesystem_fat32();
+//     activate_keyboard_interrupt();
+//     keyboard_state_activate();
 
-    struct FAT32DriverRequest req =
-        {
-            .buf = "wawaaw",
-            .name = "hihuha",
-            .parent_cluster_number = 2,
-            .buffer_size = sizeof(req.buf)};
-    delete(req);
-    while (true)
-        ;
-} */
+//     struct FAT32DriverRequest req =
+//         {
+//             .buf = "wawaaw",
+//             .name = "hihuha",
+//             .ext = "txt",
+//             .parent_cluster_number = 2,
+//             .buffer_size = 7};
+//     write(req);
+//     struct FAT32DriverRequest req2 =
+//         {
+//             .name = "fold",
+//             .parent_cluster_number = 2,
+//             .ext = "\0\0\0",
+//             .buffer_size = 0};
+//     write(req2);
+//     struct FAT32DriverRequest req3 =
+//         {
+//             .buf = "Mari Nubes Sampai Tipes !\n",
+//             .name = "albert",
+//             .parent_cluster_number = 4,
+//             .ext = "txt",
+//             .buffer_size = 27};
+//     write(req3);
+//     while (true)
+//         ;
+// } 
 
 // void kernel_setup(void) {
 //     load_gdt(&_gdt_gdtr);
