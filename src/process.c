@@ -82,12 +82,10 @@ int32_t process_create_user_process(struct FAT32DriverRequest request) {
     new_pcb->memory.page_frame_used_count = 0;
     new_pcb->memory.virtual_addr_used[new_pcb->memory.page_frame_used_count++] = (void*) request.buf;
 
-    // Setelah virtual memory untuk process telah dialokasikan, untuk sementara ganti page directory ke virtual address space baru dan lakukan pembacaan executable dari file system ke memory. Kembalikan virtual address space ke sebelum proses load executable setelah operasi file system selesai.
-
     struct PageDirectory *prev_page_dir = paging_get_current_page_directory_addr();
     paging_use_page_directory(new_page_dir);
 
-    paging_allocate_user_page_frame(new_page_dir,0);
+    paging_allocate_user_page_frame(new_page_dir,0x0);
     paging_allocate_user_page_frame(new_page_dir,(void*) 0xBFFFFFFC);
 
     // Load executable to memory
@@ -114,4 +112,25 @@ int32_t process_create_user_process(struct FAT32DriverRequest request) {
 
 exit_cleanup:
     return retcode;
+}
+
+/**
+ * Destroy process then release page directory and process control block
+ * 
+ * @param pid Process ID to delete
+ * @return    True if process destruction success
+ */
+bool process_destroy(uint32_t pid){
+    if(pid >= PROCESS_COUNT_MAX){
+        return false;
+    }
+    if(!process_manager_state.list_of_process[pid]){
+        return false;
+    }
+    struct ProcessControlBlock *pcb = &_process_list[pid];
+    struct PageDirectory *page_dir = pcb->context.page_directory_virtual_addr;
+    paging_free_page_directory(page_dir);
+    process_manager_state.list_of_process[pid] = false;
+    process_manager_state.active_process_count--;
+    return true;
 }

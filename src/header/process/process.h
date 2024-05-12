@@ -81,9 +81,8 @@ typedef enum PROCESS_STATE {
 
 /**
  * Containing process manager states.
- * 
+ * @param list_of_process      Keeping track which process is currently active
  * @param active_process_count Keeping track how many process currently active
- * ...
  */
 struct ProcessManagerState {
     bool list_of_process[PROCESS_COUNT_MAX];
@@ -114,8 +113,6 @@ struct ProcessControlBlock {
 
 //deklarasi & definisi sebuah variabel array statik PCB _process_list berukuran PROCESS_COUNT_MAX.
 extern struct ProcessControlBlock _process_list[PROCESS_COUNT_MAX];
-
-
 
 /**
  * Get currently running process PCB pointer
