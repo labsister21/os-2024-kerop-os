@@ -75,7 +75,7 @@ void putchar(char* ebx, uint8_t ecx)
         if (kata!=0){
             if (c.col == 79)
                 {
-                    framebuffer_set_cursor(newcol + 1, 0);
+                    framebuffer_set_cursor(newrow + 1, 0);
                 }   
             else
                 {
