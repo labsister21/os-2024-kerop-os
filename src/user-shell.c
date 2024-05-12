@@ -299,12 +299,23 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
     do
     {
         syscall_user(4, (uint32_t)&input, 0, 0);
+        if (!(input=='\b' && i==0)){
+            syscall_user(5, (uint32_t)&input, 0xF, 0);
+        }
         if (input != 0 && input != '\n')
         {
-            buff[i] = input;
-            i += 1;
+            if (input=='\b' && i==0){
+                // do nothing
+            }else if (input=='\b' && i>0) {
+                buff[i-1] = 0;
+                i -= 1;
+            }else{
+                buff[i] = input;
+                i += 1;
+            }
+            
         }
-        syscall_user(5, (uint32_t)&input, 0xF, 0);
+      
     } while (input != '\n');
 
     char *args[MAX_ARGS];
