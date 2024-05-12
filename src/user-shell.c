@@ -392,8 +392,53 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
                 buff[i] = input;
                 i += 1;
             }
-            
+            if (i==2){
+                if (buff[0]=='l' && buff[1]=='s'){
+                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
+                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
+                    syscall_user(5, (uint32_t)"l", BLUE, 0);
+                    syscall_user(5, (uint32_t)"s", BLUE, 0);
+                }
+            }else if (i==3){
+                if (buff[0]=='c' && buff[1]=='d' && buff[2]==' '){
+                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
+                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
+                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
+                    syscall_user(5, (uint32_t)"c", YELLOW, 0);
+                    syscall_user(5, (uint32_t)"d", YELLOW, 0);
+                    syscall_user(5, (uint32_t)" ", WHITE, 0);
+
+                } 
+            }else if (i==4){
+                if (buff[0]=='c' && buff[1]=='a' && buff[2]=='t' && buff[3]==' ' ){
+                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
+                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
+                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
+                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
+                    syscall_user(5, (uint32_t)"c", AQUA, 0);
+                    syscall_user(5, (uint32_t)"a", AQUA, 0);
+                    syscall_user(5, (uint32_t)"t", AQUA, 0);
+                    syscall_user(5, (uint32_t)" ", WHITE, 0);
+
+                }
+            }else if (i==6){
+                if (buff[0]=='m'&& buff[1]=='k' && buff[2]=='d'&& buff[3]=='i'&& buff[4]=='r' && buff[5]==' '){
+                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
+                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
+                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
+                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
+                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
+                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
+                    syscall_user(5, (uint32_t)"m", GOLD, 0);
+                    syscall_user(5, (uint32_t)"k", GOLD, 0);
+                    syscall_user(5, (uint32_t)"d", GOLD, 0);
+                    syscall_user(5, (uint32_t)"i", GOLD, 0);
+                    syscall_user(5, (uint32_t)"r", GOLD, 0);
+                    syscall_user(5, (uint32_t)" ", WHITE, 0);
+                }
+            }
         }
+       
       
     } while (input != '\n');
 
@@ -406,13 +451,10 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
         args[argc++] = token;
         token = strtok(NULL, delim);
     }
-    // char cd[2] = "cd";
-    // char mkdir[5] = "mkdir";
-    // char cat[3] = "cat";
-    // char cls[3] = "cls";
 
     if (strcmp("cd",args[0]) == 0)
     {
+
         char *dirname = args[1];
         cede(dirname, dir_stack, dir_stack_index, dir_name_stack);
     }
@@ -424,6 +466,7 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
     {
         if (argc >= 2)
         {
+           
             char *dirname = args[1];
             mkdir_command(dirname, dir_stack[*dir_stack_index-1]);
         }
