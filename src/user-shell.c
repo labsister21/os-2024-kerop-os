@@ -27,9 +27,12 @@
 #define MAX_QUEUE_SIZE 20
 typedef struct
 {
-    char filename[9];               // File name
-    uint32_t cluster_number;        // Cluster number of the file
-    uint32_t parent_cluster_number; // Cluster number of parent directory
+    char filename[9];               
+    uint32_t cluster_number;        
+    uint32_t parent_cluster_number; 
+    uint32_t clusterpathing[MAX_DIR_STACK_SIZE];
+    uint32_t neff;
+
 } FileInfo;
 // Antriii
 typedef struct
@@ -49,22 +52,27 @@ void enqueue(Queue *queue, FileInfo value)
 {
     if ((queue->rear + 1) % MAX_QUEUE_SIZE == queue->front)
     {
-        return; // Queue is full
+        return; 
     }
     if (queue->front == -1)
     {
         queue->front = 0;
     }
     queue->rear = (queue->rear + 1) % MAX_QUEUE_SIZE;
-    // Copy filename character by character
+  
     for (int i = 0; i < 9; i++)
     {
         queue->items[queue->rear].filename[i] = value.filename[i];
     }
-    // Ensure the filename is null-terminated
+
     queue->items[queue->rear].filename[8] = '\0';
     queue->items[queue->rear].cluster_number = value.cluster_number;
     queue->items[queue->rear].parent_cluster_number = value.parent_cluster_number;
+    queue->items[queue->rear].neff = value.neff;
+    for (int i = 0; i < MAX_DIR_STACK_SIZE; i++)
+    {
+        queue->items[queue->rear].clusterpathing[i] = value.clusterpathing[i];
+    }
 }
 
 FileInfo dequeue(Queue *queue)
@@ -72,7 +80,7 @@ FileInfo dequeue(Queue *queue)
     FileInfo item;
     if (queue->front == -1)
     {
-        // Queue is empty, return an empty FileInfo
+
         for (int i = 0; i < 9; i++)
         {
             item.filename[i] = '\0';
@@ -81,15 +89,20 @@ FileInfo dequeue(Queue *queue)
         item.parent_cluster_number = 0;
         return item;
     }
-    // Copy filename character by character
-    for (int i = 0; i < 9 ; i++)
+
+    for (int i = 0; i < 9; i++)
     {
         item.filename[i] = queue->items[queue->front].filename[i];
     }
-    // Ensure the filename is null-terminated
+ 
     item.filename[8] = '\0';
     item.cluster_number = queue->items[queue->front].cluster_number;
     item.parent_cluster_number = queue->items[queue->front].parent_cluster_number;
+    item.neff = queue->items[queue->front].neff;
+    for (int i = 0; i < MAX_DIR_STACK_SIZE; i++)
+    {
+        item.clusterpathing[i] = queue->items[queue->front].clusterpathing[i];
+    }
 
     if (queue->front == queue->rear)
     {
@@ -99,34 +112,6 @@ FileInfo dequeue(Queue *queue)
     else
     {
         queue->front = (queue->front + 1) % MAX_QUEUE_SIZE;
-    }
-    return item;
-}
-
-FileInfo peek(Queue *queue)
-{
-    FileInfo item;
-    if (queue->front == -1)
-    {
-        // Queue is empty, return an empty FileInfo
-        for (int i = 0; i < 9; i++)
-        {
-            item.filename[i] = '\0';
-        }
-        item.cluster_number = 0;
-        item.parent_cluster_number = 0;
-    }
-    else
-    {
-        // Copy filename character by character
-        for (int i = 0; i < 9 && queue->items[queue->front].filename[i] != '\0'; i++)
-        {
-            item.filename[i] = queue->items[queue->front].filename[i];
-        }
-        // Ensure the filename is null-terminated
-        item.filename[8] = '\0';
-        item.cluster_number = queue->items[queue->front].cluster_number;
-        item.parent_cluster_number = queue->items[queue->front].parent_cluster_number;
     }
     return item;
 }
@@ -264,7 +249,7 @@ void mkdir_command(char *dirname, uint32_t parent_cluster_number)
 
     syscall_user(2, (uint32_t)&request, 0, 0);
 }
-// Custom implementation of strcpy
+
 void custom_strcpy(char *dest, const char *src)
 {
     while (*src)
@@ -274,18 +259,7 @@ void custom_strcpy(char *dest, const char *src)
     *dest = '\0';
 }
 
-// Custom implementation of strcmp
-int custom_strcmp(const char *s1, const char *s2)
-{
-    while (*s1 && (*s1 == *s2))
-    {
-        s1++;
-        s2++;
-    }
-    return *(const unsigned char *)s1 - *(const unsigned char *)s2;
-}
 
-// Custom implementation of strcat
 void custom_strcat(char *dest, const char *src)
 {
     while (*dest)
@@ -447,20 +421,22 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
         }
     }
 }
-void bfs_find(const char *target_name)
+void bfs_find(char *target_name)
 {
     Queue queue;
     createQueue(&queue);
     int8_t isFirst = 1;
 
-    // Enqueue the root directory
+   
     FileInfo root_info;
     custom_strcpy(root_info.filename, "ROOT\0\0\0\0");
     root_info.cluster_number = ROOT_CLUSTER_NUMBER;
     root_info.parent_cluster_number = ROOT_CLUSTER_NUMBER;
+    root_info.clusterpathing[0] = ROOT_CLUSTER_NUMBER;
+    root_info.neff = 0;
     enqueue(&queue, root_info);
 
-    // Traverse directories using BFS
+ 
     while (!isEmpty(&queue))
     {
         FileInfo current_info = dequeue(&queue);
@@ -490,67 +466,60 @@ void bfs_find(const char *target_name)
             {
                 i = 1;
             }
-            // Check each entry in the directory
+
             for (; i < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry); i++)
             {
                 if (dir_table.table[i].user_attribute == UATTR_NOT_EMPTY)
                 {
-                    // Check if it's a directory
+
                     if (dir_table.table[i].attribute == ATTR_SUBDIRECTORY)
                     {
-                        // Enqueue subdirectory
                         FileInfo sub_dir_info;
                         custom_strcpy(sub_dir_info.filename, dir_table.table[i].name);
                         sub_dir_info.cluster_number = (dir_table.table[i].cluster_high << 16) | dir_table.table[i].cluster_low;
                         sub_dir_info.parent_cluster_number = current_info.cluster_number;
+
+                        sub_dir_info.neff = current_info.neff + 1;
+                        for (int i = 0; i < MAX_DIR_STACK_SIZE; i++)
+                        {
+                            sub_dir_info.clusterpathing[i] = current_info.clusterpathing[i];
+                        }
+                        sub_dir_info.clusterpathing[sub_dir_info.neff] = sub_dir_info.cluster_number;
                         enqueue(&queue, sub_dir_info);
                     }
-                    // Check if it matches the target name
-                    if (custom_strcmp(dir_table.table[i].name, target_name) == 0)
+                    if (strcmp(dir_table.table[i].name, target_name) == 0)
                     {
-                        // uint32_t getprev;
-                        char path[MAX_DIR_STACK_SIZE * 10]; 
-                        // getprev = current_info.parent_cluster_number;
-                        // while (getprev != ROOT_CLUSTER_NUMBER)
-                        // {
-                        //     struct FAT32DirectoryTable parent_table;
-                        //     syscall_user(10, (uint32_t)&parent_table, getprev, 0);
-                            
+                        char path[MAX_DIR_STACK_SIZE * 10];
 
-
-                        // }
-                        // Print path
-                       
-                        custom_strcpy(path, current_info.filename);
-                        uint32_t parent_cluster = current_info.parent_cluster_number;
-                        while (parent_cluster != 0)
+                        uint32_t get_i = 0;
+                        while (get_i <= current_info.neff)
                         {
-                            // Read parent directory name
                             struct FAT32DirectoryTable parent_table;
-                            syscall_user(10, (uint32_t)&parent_table, parent_cluster, 0);
-                 
-                            // Find entry corresponding to the parent cluster
-                            for (uint32_t j = 1; j < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry); j++)
-                            {
-                                uint32_t cn = parent_table.table[j].cluster_high << 16 | parent_table.table[j].cluster_low;
-                                if (cn == parent_cluster)
-                                {
-                                    // Prepend parent directory name to path
-                                    char temp[MAX_DIR_STACK_SIZE * 10]; // Adjust the size as needed
-                                    custom_strcpy(temp, path);
-                                    custom_strcpy(path, parent_table.table[j].name);
-                                    custom_strcat(path, "/");
-                                    custom_strcat(path, temp);
-                                    break;
-                                }
-                            }
-                            parent_cluster = parent_table.table[1].cluster_high << 16 | parent_table.table[1].cluster_low;
+                            syscall_user(10, (uint32_t)&parent_table, current_info.clusterpathing[get_i], 0);
+                            custom_strcat(path, parent_table.table[0].name);
+                            custom_strcat(path, "/");
+                            get_i++;
                         }
-                        // Print path
-                        custom_strcat(path, "/");
-                        custom_strcat(path,target_name);
-                        syscall_user(6, (uint32_t)path, custom_strlen(path), WHITE);
+                        custom_strcat(path, target_name);
+
+                        if (dir_table.table[i].filesize != 0)
+                        {
+                            char ext[4];
+                            ext[0] = '.';
+                            for (int j = 1; j < 4; j++)
+                            {
+                                ext[j] = dir_table.table[i].ext[j-1];
+                            }
+                            custom_strcat(path, ext);
+                            syscall_user(6, (uint32_t)path, custom_strlen(path), WHITE);
+                        }else{
+                            syscall_user(6, (uint32_t)path, custom_strlen(path), LIGHT_PURPLE);
+                        }
                         syscall_user(6, (uint32_t) "\n", 1, WHITE);
+                        for (int i = 0; i < MAX_DIR_STACK_SIZE * 10; i++)
+                        {
+                            path[i] = 0;
+                        }
                     }
                 }
             }
