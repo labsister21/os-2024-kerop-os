@@ -65,6 +65,7 @@ void syscall(struct InterruptFrame frame)
         // read
         *((int8_t *)frame.cpu.general.ecx) = read(
             *(struct FAT32DriverRequest *)frame.cpu.general.ebx);
+        // read_clusters((struct ClusterBuffer*)((struct FAT32DriverRequest *)frame.cpu.general.ebx)->buf,(uint32_t)frame.cpu.general.edx,1);
         break;
     case 1:
         // read_directory
@@ -107,7 +108,12 @@ void syscall(struct InterruptFrame frame)
     case 10:
         read_clusters((struct FAT32DirectoryTable*) frame.cpu.general.ebx,(uint32_t)frame.cpu.general.ecx,1);
         break;
+    
+    case 11:
+        read_clusters((struct ClusterBuffer*) frame.cpu.general.ebx,(uint32_t)frame.cpu.general.ecx,1);
+        break;
     }
+
 }
 
 void main_interrupt_handler(struct InterruptFrame frame)
