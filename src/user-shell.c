@@ -806,10 +806,143 @@ void erem(char* filename,uint32_t *dir_stack, uint8_t *dir_stack_index){
     int8_t retcode;
     syscall_user(12,(uint32_t)&request,(uint32_t)&retcode,0);
     if (retcode!=0){
-        syscall_user(6, (uint32_t)"FAILED TO READ FOLDER\n", 22, RED);
+        syscall_user(6, (uint32_t)"FAILED TO DELETE FOLDER\n", 24, RED);
         return;
     }
     
+
+}
+void cepe(char* filename,char* dest ,uint32_t *dir_stack, uint8_t *dir_stack_index,char (*dir_name_stack)[8]){
+    int parseId = 0;
+    int8_t retcode;
+    // LF newline)
+    if (strcmp("./",filename)==0){
+        filename = filename + 2;
+    }
+    if (strcmp("./",dest)==0){
+        dest = dest + 2;
+    }
+    if (strcmp("../",dest)==0){
+        do {
+            parseId += 1;
+            dest = dest + 3;
+        }while (strcmp("../",dest)==0);
+        if (*dir_stack_index <= parseId){
+            syscall_user(6, (uint32_t)"INVALID DESTINATION PATH\n", 18, RED);
+            return;
+        }
+    }
+    int destParseId = parseId;
+    // uint8_t attribute;
+    // uint8_t user_attribute;
+    // uint16_t cluster_high;
+    // uint16_t cluster_low;
+    // read current directory
+    struct FAT32DirectoryTable curr_dir;
+    struct FAT32DriverRequest requestcurr = {
+        .buf = &curr_dir,
+        .parent_cluster_number = dir_stack[*dir_stack_index-1],
+        .ext = "\0\0\0",
+        .buffer_size = 0,
+        
+    };
+    uint8_t i = 0;
+    for (;i<8;i++){
+        requestcurr.name[i] = dir_name_stack[*dir_stack_index-1][i];
+
+    }
+    syscall_user(1,(uint32_t)&requestcurr,(uint32_t)&retcode,0);
+    syscall_user(10, (uint32_t)&curr_dir, dir_stack[*dir_stack_index-1], 0);
+    if (retcode!=0){
+        syscall_user(6, (uint32_t)"FAILED TO READ DSTFOLDER\n", 25, RED);
+        return;
+    }
+    // read source file size
+    uint32_t filesize;
+    struct FAT32DriverRequest request = {
+        .parent_cluster_number = dir_stack[*dir_stack_index-1],
+        .ext = "\0\0\0",
+    };
+    char realFileName[9] = "\0\0\0\0\0\0\0\0\0";
+    parseId = 0;
+    while (strcmp(".", filename + parseId) != 0 && parseId < 9)
+    {
+        realFileName[parseId] = filename[parseId];
+        parseId += 1;
+    }
+    if (parseId > 8)
+    {
+        syscall_user(6, (uint32_t) "INVALID FILE NAME\n", 18, RED);
+        return;
+    }
+    request.ext[0] = filename[parseId+1];
+    request.ext[1] = filename[parseId+2];
+    request.ext[2] = filename[parseId+3];
+    i = 0;
+    for (;i<8;i++){
+        request.name[i]= realFileName[i];
+    }
+    
+    
+    i = 0;
+    for (;i<64;i++){
+        if (strcmp(curr_dir.table[i].name,realFileName)==0){
+            // attribute = curr_dir.table[i].attribute;
+            // user_attribute=curr_dir.table[i].user_attribute;
+            // cluster_high= curr_dir.table[i].cluster_high;
+            // cluster_low = curr_dir.table[i].cluster_low ;
+            filesize = curr_dir.table[i].filesize;
+        }
+    }
+    uint8_t buffer[filesize];
+    request.buf = buffer;
+    request.buffer_size = filesize;
+    syscall_user(0,(uint32_t)&request,(uint32_t)&retcode,0);
+    if (retcode!=0){
+        syscall_user(6, (uint32_t)"FAILED TO READ SRCFILE\n", 23, RED);
+        return;
+    }
+    // delete
+    struct FAT32DriverRequest request2 = {
+        .parent_cluster_number = dir_stack[*dir_stack_index - (destParseId + 1)],
+        .buffer_size = 0,
+    };
+    i = 0;
+    char realFileDestName[9] = "\0\0\0\0\0\0\0\0\0";
+    parseId = 0;
+    while (strcmp(".", dest + parseId) != 0 && parseId < 9)
+    {
+        realFileDestName[parseId] = dest[parseId];
+        parseId += 1;
+    }
+    if (parseId > 8)
+    {
+        syscall_user(6, (uint32_t) "INVALID FILE NAME\n", 18, RED);
+        return;
+    }
+    request2.ext[0] = dest[parseId+1];
+    request2.ext[1] = dest[parseId+2];
+    request2.ext[2] = dest[parseId+3];
+    i = 0;
+    for (; i < 8; i++)
+    {
+        request2.name[i] = realFileDestName[i];
+    }
+    syscall_user(12,(uint32_t)&request2,(uint32_t)&retcode,0);
+    if (retcode!=0){
+        syscall_user(6, (uint32_t)"FAILED TO DELETE FOLDER\n", 24, RED);
+        return;
+    }
+    // write
+    request2.buffer_size = filesize;
+    request2.buf = buffer;
+    syscall_user(2,(uint32_t)&request2,(uint32_t)&retcode,0);
+    if (retcode!=0){
+        syscall_user(6, (uint32_t)"FAILED TO WRITE FOLDER\n", 23, RED);
+        return;
+    }
+
+
 }
 void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
 
@@ -954,7 +1087,7 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
     }
     else if (strcmp("mv",args[0]) == 0)
     {
-       if (argc >= 2)
+       if (argc == 3)
         {
             emvi(args[1],args[2],dir_stack,dir_stack_index,dir_name_stack);
         }
@@ -966,6 +1099,17 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
     else if(strcmp("rm",args[0])==0){
         if (argc == 2){
             erem(args[1],dir_stack,dir_stack_index);
+        }else
+        {
+            syscall_user(6, (uint32_t)"[ERROR]: Usage: rm <filepath>\n", 30, RED);
+        }
+    }
+    else if (strcmp("cp",args[0])==0){
+        if (argc==3){
+            cepe(args[1],args[2],dir_stack,dir_stack_index,dir_name_stack);
+        }else
+        {
+            syscall_user(6, (uint32_t)"[ERROR]: Usage: rm <filesrcpath> <filesdestpath>\n", 49, RED);
         }
     }
     else

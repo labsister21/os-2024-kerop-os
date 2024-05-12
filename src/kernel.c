@@ -262,7 +262,7 @@ void kernel_setup(void) {
         {
             .buf = "Mari Nubes Sampai Tipes !\n",
             .name = "albert",
-            .parent_cluster_number = 10,
+            .parent_cluster_number = 11,
             .ext = "txt",
             .buffer_size = 27};
     write(req3);
