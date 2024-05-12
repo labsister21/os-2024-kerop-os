@@ -27,9 +27,12 @@
 #define MAX_QUEUE_SIZE 20
 typedef struct
 {
-    char filename[9];               // File name
-    uint32_t cluster_number;        // Cluster number of the file
-    uint32_t parent_cluster_number; // Cluster number of parent directory
+    char filename[9];
+    uint32_t cluster_number;
+    uint32_t parent_cluster_number;
+    uint32_t clusterpathing[MAX_DIR_STACK_SIZE];
+    uint32_t neff;
+
 } FileInfo;
 // Antriii
 typedef struct
@@ -49,22 +52,27 @@ void enqueue(Queue *queue, FileInfo value)
 {
     if ((queue->rear + 1) % MAX_QUEUE_SIZE == queue->front)
     {
-        return; // Queue is full
+        return;
     }
     if (queue->front == -1)
     {
         queue->front = 0;
     }
     queue->rear = (queue->rear + 1) % MAX_QUEUE_SIZE;
-    // Copy filename character by character
+
     for (int i = 0; i < 9; i++)
     {
         queue->items[queue->rear].filename[i] = value.filename[i];
     }
-    // Ensure the filename is null-terminated
+
     queue->items[queue->rear].filename[8] = '\0';
     queue->items[queue->rear].cluster_number = value.cluster_number;
     queue->items[queue->rear].parent_cluster_number = value.parent_cluster_number;
+    queue->items[queue->rear].neff = value.neff;
+    for (int i = 0; i < MAX_DIR_STACK_SIZE; i++)
+    {
+        queue->items[queue->rear].clusterpathing[i] = value.clusterpathing[i];
+    }
 }
 
 FileInfo dequeue(Queue *queue)
@@ -72,7 +80,7 @@ FileInfo dequeue(Queue *queue)
     FileInfo item;
     if (queue->front == -1)
     {
-        // Queue is empty, return an empty FileInfo
+
         for (int i = 0; i < 9; i++)
         {
             item.filename[i] = '\0';
@@ -81,15 +89,20 @@ FileInfo dequeue(Queue *queue)
         item.parent_cluster_number = 0;
         return item;
     }
-    // Copy filename character by character
-    for (int i = 0; i < 9 ; i++)
+
+    for (int i = 0; i < 9; i++)
     {
         item.filename[i] = queue->items[queue->front].filename[i];
     }
-    // Ensure the filename is null-terminated
+
     item.filename[8] = '\0';
     item.cluster_number = queue->items[queue->front].cluster_number;
     item.parent_cluster_number = queue->items[queue->front].parent_cluster_number;
+    item.neff = queue->items[queue->front].neff;
+    for (int i = 0; i < MAX_DIR_STACK_SIZE; i++)
+    {
+        item.clusterpathing[i] = queue->items[queue->front].clusterpathing[i];
+    }
 
     if (queue->front == queue->rear)
     {
@@ -99,34 +112,6 @@ FileInfo dequeue(Queue *queue)
     else
     {
         queue->front = (queue->front + 1) % MAX_QUEUE_SIZE;
-    }
-    return item;
-}
-
-FileInfo peek(Queue *queue)
-{
-    FileInfo item;
-    if (queue->front == -1)
-    {
-        // Queue is empty, return an empty FileInfo
-        for (int i = 0; i < 9; i++)
-        {
-            item.filename[i] = '\0';
-        }
-        item.cluster_number = 0;
-        item.parent_cluster_number = 0;
-    }
-    else
-    {
-        // Copy filename character by character
-        for (int i = 0; i < 9 && queue->items[queue->front].filename[i] != '\0'; i++)
-        {
-            item.filename[i] = queue->items[queue->front].filename[i];
-        }
-        // Ensure the filename is null-terminated
-        item.filename[8] = '\0';
-        item.cluster_number = queue->items[queue->front].cluster_number;
-        item.parent_cluster_number = queue->items[queue->front].parent_cluster_number;
     }
     return item;
 }
@@ -264,7 +249,7 @@ void mkdir_command(char *dirname, uint32_t parent_cluster_number)
 
     syscall_user(2, (uint32_t)&request, 0, 0);
 }
-// Custom implementation of strcpy
+
 void custom_strcpy(char *dest, const char *src)
 {
     while (*src)
@@ -274,18 +259,6 @@ void custom_strcpy(char *dest, const char *src)
     *dest = '\0';
 }
 
-// Custom implementation of strcmp
-int custom_strcmp(const char *s1, const char *s2)
-{
-    while (*s1 && (*s1 == *s2))
-    {
-        s1++;
-        s2++;
-    }
-    return *(const unsigned char *)s1 - *(const unsigned char *)s2;
-}
-
-// Custom implementation of strcat
 void custom_strcat(char *dest, const char *src)
 {
     while (*dest)
@@ -447,23 +420,25 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
         }
     }
 }
-void bfs_find(const char *target_name)
+void bfs_find(char *target_name)
 {
     Queue queue;
     createQueue(&queue);
     int8_t isFirst = 1;
+    int8_t n_found = 0;
 
-    // Enqueue the root directory
     FileInfo root_info;
     custom_strcpy(root_info.filename, "ROOT\0\0\0\0");
     root_info.cluster_number = ROOT_CLUSTER_NUMBER;
     root_info.parent_cluster_number = ROOT_CLUSTER_NUMBER;
+    root_info.clusterpathing[0] = ROOT_CLUSTER_NUMBER;
+    root_info.neff = 0;
     enqueue(&queue, root_info);
 
-    // Traverse directories using BFS
     while (!isEmpty(&queue))
     {
         FileInfo current_info = dequeue(&queue);
+        
 
         // Read current directory contents
         struct FAT32DirectoryTable dir_table;
@@ -490,67 +465,63 @@ void bfs_find(const char *target_name)
             {
                 i = 1;
             }
-            // Check each entry in the directory
+
             for (; i < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry); i++)
             {
                 if (dir_table.table[i].user_attribute == UATTR_NOT_EMPTY)
                 {
-                    // Check if it's a directory
+
                     if (dir_table.table[i].attribute == ATTR_SUBDIRECTORY)
                     {
-                        // Enqueue subdirectory
                         FileInfo sub_dir_info;
                         custom_strcpy(sub_dir_info.filename, dir_table.table[i].name);
                         sub_dir_info.cluster_number = (dir_table.table[i].cluster_high << 16) | dir_table.table[i].cluster_low;
                         sub_dir_info.parent_cluster_number = current_info.cluster_number;
+
+                        sub_dir_info.neff = current_info.neff + 1;
+                        for (int i = 0; i < MAX_DIR_STACK_SIZE; i++)
+                        {
+                            sub_dir_info.clusterpathing[i] = current_info.clusterpathing[i];
+                        }
+                        sub_dir_info.clusterpathing[sub_dir_info.neff] = sub_dir_info.cluster_number;
                         enqueue(&queue, sub_dir_info);
                     }
-                    // Check if it matches the target name
-                    if (custom_strcmp(dir_table.table[i].name, target_name) == 0)
+                    if (strcmp(dir_table.table[i].name, target_name) == 0)
                     {
-                        // uint32_t getprev;
-                        char path[MAX_DIR_STACK_SIZE * 10]; 
-                        // getprev = current_info.parent_cluster_number;
-                        // while (getprev != ROOT_CLUSTER_NUMBER)
-                        // {
-                        //     struct FAT32DirectoryTable parent_table;
-                        //     syscall_user(10, (uint32_t)&parent_table, getprev, 0);
-                            
+                        n_found++;
+                        char path[MAX_DIR_STACK_SIZE * 10];
 
-
-                        // }
-                        // Print path
-                       
-                        custom_strcpy(path, current_info.filename);
-                        uint32_t parent_cluster = current_info.parent_cluster_number;
-                        while (parent_cluster != 0)
+                        uint32_t get_i = 0;
+                        while (get_i <= current_info.neff)
                         {
-                            // Read parent directory name
                             struct FAT32DirectoryTable parent_table;
-                            syscall_user(10, (uint32_t)&parent_table, parent_cluster, 0);
-                 
-                            // Find entry corresponding to the parent cluster
-                            for (uint32_t j = 1; j < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry); j++)
-                            {
-                                uint32_t cn = parent_table.table[j].cluster_high << 16 | parent_table.table[j].cluster_low;
-                                if (cn == parent_cluster)
-                                {
-                                    // Prepend parent directory name to path
-                                    char temp[MAX_DIR_STACK_SIZE * 10]; // Adjust the size as needed
-                                    custom_strcpy(temp, path);
-                                    custom_strcpy(path, parent_table.table[j].name);
-                                    custom_strcat(path, "/");
-                                    custom_strcat(path, temp);
-                                    break;
-                                }
-                            }
-                            parent_cluster = parent_table.table[1].cluster_high << 16 | parent_table.table[1].cluster_low;
+                            syscall_user(10, (uint32_t)&parent_table, current_info.clusterpathing[get_i], 0);
+                            custom_strcat(path, parent_table.table[0].name);
+                            custom_strcat(path, "/");
+                            get_i++;
                         }
-                        // Print path
-                        custom_strcat(path, "/");
-                        custom_strcat(path,target_name);
-                        syscall_user(6, (uint32_t)path, custom_strlen(path), WHITE);
+                        custom_strcat(path, target_name);
+
+                        if (dir_table.table[i].filesize != 0)
+                        {
+                            char ext[4];
+                            ext[0] = '.';
+                            for (int j = 1; j < 4; j++)
+                            {
+                                ext[j] = dir_table.table[i].ext[j - 1];
+                            }
+                            custom_strcat(path, ext);
+                            syscall_user(6, (uint32_t)path, custom_strlen(path), WHITE);
+                        }
+                        else
+                        {
+                            syscall_user(6, (uint32_t)path, custom_strlen(path), LIGHT_PURPLE);
+                        }
                         syscall_user(6, (uint32_t) "\n", 1, WHITE);
+                        for (int i = 0; i < MAX_DIR_STACK_SIZE * 10; i++)
+                        {
+                            path[i] = 0;
+                        }
                     }
                 }
             }
@@ -560,39 +531,49 @@ void bfs_find(const char *target_name)
             syscall_user(6, (uint32_t) "Error reading directory.\n", 26, RED);
         }
     }
+    if (n_found == 0)
+    {
+        syscall_user(6, (uint32_t) "Tidak ada file/folder yang ditemukan \n", 39, RED);
+    }
 }
 
 void find(char *fname)
 {
     bfs_find(fname);
 }
-void ket(char* Filename, uint32_t *dir_stack, uint8_t *dir_stack_index,  char (*dir_name_stack)[8]){
-  // cat : Menuliskan sebuah file sebagai text file ke layar (Gunakan format
+void ket(char *Filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
+{
+    // cat : Menuliskan sebuah file sebagai text file ke layar (Gunakan format
     int parseId = 0;
-      // LF newline)
-    if (strcmp("./",Filename)==0){
+    // LF newline)
+    if (strcmp("./", Filename) == 0)
+    {
         Filename = Filename + 2;
     }
-    if (strcmp("../",Filename)==0){
-        do {
+    if (strcmp("../", Filename) == 0)
+    {
+        do
+        {
             parseId += 1;
             Filename = Filename + 3;
-        }while (strcmp("../",Filename)==0);
-        if (*dir_stack_index <= parseId){
-            syscall_user(6, (uint32_t)"INVALID FILE PATH\n", 18, RED);
+        } while (strcmp("../", Filename) == 0);
+        if (*dir_stack_index <= parseId)
+        {
+            syscall_user(6, (uint32_t) "INVALID FILE PATH\n", 18, RED);
             return;
         }
     }
     struct FAT32DirectoryTable parent_dir;
     struct FAT32DriverRequest request = {
         .buf = &parent_dir,
-        .parent_cluster_number = dir_stack[*dir_stack_index-(parseId+1)],
+        .parent_cluster_number = dir_stack[*dir_stack_index - (parseId + 1)],
         .ext = "\0\0\0",
         .buffer_size = 0,
     };
     uint8_t i = 0;
-    for (;i<8;i++){
-        request.name[i] = dir_name_stack[*dir_stack_index-(parseId+1)][i];
+    for (; i < 8; i++)
+    {
+        request.name[i] = dir_name_stack[*dir_stack_index - (parseId + 1)][i];
     }
     int8_t retcode;
     syscall_user(1,(uint32_t)&request,(uint32_t)&retcode,0);
@@ -603,39 +584,49 @@ void ket(char* Filename, uint32_t *dir_stack, uint8_t *dir_stack_index,  char (*
     }
     char realFileName[9] = "\0\0\0\0\0\0\0\0\0";
     parseId = 0;
-    while (strcmp(".",Filename+parseId)!=0 && parseId < 9){
+    while (strcmp(".", Filename + parseId) != 0 && parseId < 9)
+    {
         realFileName[parseId] = Filename[parseId];
         parseId += 1;
     }
-    if (parseId > 8){
-        syscall_user(6, (uint32_t)"INVALID FILE NAME\n", 18, RED);
+    if (parseId > 8)
+    {
+        syscall_user(6, (uint32_t) "INVALID FILE NAME\n", 18, RED);
         return;
-    }else if (strcmp("txt",Filename+parseId+1)!=0){
-        syscall_user(6, (uint32_t)"INVALID FILE EXTENSION\n", 23, RED);
+    }
+    else if (strcmp("txt", Filename + parseId + 1) != 0)
+    {
+        syscall_user(6, (uint32_t) "INVALID FILE EXTENSION\n", 23, RED);
         return;
     }
     parseId = 0;
-    for (;parseId<64;parseId++){
-        if (strcmp(parent_dir.table[parseId].name,realFileName)==0 && strcmp("txt",parent_dir.table[parseId].ext)==0){
+    for (; parseId < 64; parseId++)
+    {
+        if (strcmp(parent_dir.table[parseId].name, realFileName) == 0 && strcmp("txt", parent_dir.table[parseId].ext) == 0)
+        {
             struct ClusterBuffer fileBuff;
 
             struct FAT32DriverRequest request2 = {
-            .buf = &fileBuff,
-            .parent_cluster_number = request.parent_cluster_number,
-            .ext = "txt",
-            .buffer_size = parent_dir.table[parseId].filesize,
+                .buf = &fileBuff,
+                .parent_cluster_number = request.parent_cluster_number,
+                .ext = "txt",
+                .buffer_size = parent_dir.table[parseId].filesize,
             };
             i = 0;
-            for (;i<8;i++){
+            for (; i < 8; i++)
+            {
                 request2.name[i] = realFileName[i];
             }
-            syscall_user(0,(uint32_t)&request2,(uint32_t)&retcode,0);
-            if (retcode==0){
-                syscall_user(6,(uint32_t)fileBuff.buf,request2.buffer_size,WHITE);
+            syscall_user(0, (uint32_t)&request2, (uint32_t)&retcode, 0);
+            if (retcode == 0)
+            {
+                syscall_user(6, (uint32_t)fileBuff.buf, request2.buffer_size, WHITE);
                 syscall_user(6, (uint32_t) "\n", 1, WHITE);
                 return;
-            }else{
-                syscall_user(6, (uint32_t)"FAILED TO READ\n", 15, RED);
+            }
+            else
+            {
+                syscall_user(6, (uint32_t) "FAILED TO READ\n", 15, RED);
                 return;
             }
             
@@ -782,8 +773,10 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
             if (input == '\b' && i == 0)
             {
                 // do nothing
-            }else if (input=='\b' && i>0) {
-                buff[i-1] = ' ';
+            }
+            else if (input == '\b' && i > 0)
+            {
+                buff[i - 1] = ' ';
                 i -= 1;
             }
             else
@@ -791,54 +784,62 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
                 buff[i] = input;
                 i += 1;
             }
-            if (i==2){
-                if (buff[0]=='l' && buff[1]=='s'){
-                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
-                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
-                    syscall_user(5, (uint32_t)"l", BLUE, 0);
-                    syscall_user(5, (uint32_t)"s", BLUE, 0);
+            if (i == 2)
+            {
+                if (buff[0] == 'l' && buff[1] == 's')
+                {
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "l", BLUE, 0);
+                    syscall_user(5, (uint32_t) "s", BLUE, 0);
                 }
-            }else if (i==3){
-                if (buff[0]=='c' && buff[1]=='d' && buff[2]==' '){
-                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
-                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
-                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
-                    syscall_user(5, (uint32_t)"c", YELLOW, 0);
-                    syscall_user(5, (uint32_t)"d", YELLOW, 0);
-                    syscall_user(5, (uint32_t)" ", WHITE, 0);
-
-                } 
-            }else if (i==4){
-                if (buff[0]=='c' && buff[1]=='a' && buff[2]=='t' && buff[3]==' ' ){
-                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
-                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
-                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
-                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
-                    syscall_user(5, (uint32_t)"c", AQUA, 0);
-                    syscall_user(5, (uint32_t)"a", AQUA, 0);
-                    syscall_user(5, (uint32_t)"t", AQUA, 0);
-                    syscall_user(5, (uint32_t)" ", WHITE, 0);
-
+            }
+            else if (i == 3)
+            {
+                if (buff[0] == 'c' && buff[1] == 'd' && buff[2] == ' ')
+                {
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "c", YELLOW, 0);
+                    syscall_user(5, (uint32_t) "d", YELLOW, 0);
+                    syscall_user(5, (uint32_t) " ", WHITE, 0);
                 }
-            }else if (i==6){
-                if (buff[0]=='m'&& buff[1]=='k' && buff[2]=='d'&& buff[3]=='i'&& buff[4]=='r' && buff[5]==' '){
-                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
-                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
-                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
-                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
-                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
-                    syscall_user(5, (uint32_t)"\b", 0xF, 0);
-                    syscall_user(5, (uint32_t)"m", GOLD, 0);
-                    syscall_user(5, (uint32_t)"k", GOLD, 0);
-                    syscall_user(5, (uint32_t)"d", GOLD, 0);
-                    syscall_user(5, (uint32_t)"i", GOLD, 0);
-                    syscall_user(5, (uint32_t)"r", GOLD, 0);
-                    syscall_user(5, (uint32_t)" ", WHITE, 0);
+            }
+            else if (i == 4)
+            {
+                if (buff[0] == 'c' && buff[1] == 'a' && buff[2] == 't' && buff[3] == ' ')
+                {
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "c", AQUA, 0);
+                    syscall_user(5, (uint32_t) "a", AQUA, 0);
+                    syscall_user(5, (uint32_t) "t", AQUA, 0);
+                    syscall_user(5, (uint32_t) " ", WHITE, 0);
+                }
+            }
+            else if (i == 6)
+            {
+                if (buff[0] == 'm' && buff[1] == 'k' && buff[2] == 'd' && buff[3] == 'i' && buff[4] == 'r' && buff[5] == ' ')
+                {
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "m", GOLD, 0);
+                    syscall_user(5, (uint32_t) "k", GOLD, 0);
+                    syscall_user(5, (uint32_t) "d", GOLD, 0);
+                    syscall_user(5, (uint32_t) "i", GOLD, 0);
+                    syscall_user(5, (uint32_t) "r", GOLD, 0);
+                    syscall_user(5, (uint32_t) " ", WHITE, 0);
                 }
             }
         }
-       
-      
+
     } while (input != '\n');
 
     char *args[MAX_ARGS];
@@ -851,21 +852,21 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
         token = strtok(NULL, delim);
     }
 
-    if (strcmp("cd",args[0]) == 0)
+    if (strcmp("cd", args[0]) == 0)
     {
 
         char *dirname = args[1];
         cede(dirname, dir_stack, dir_stack_index, dir_name_stack);
     }
-    else if (strcmp("ls",args[0]) == 0)
+    else if (strcmp("ls", args[0]) == 0)
     {
         ls(dir_stack, dir_stack_index, dir_name_stack);
     }
-    else if (strcmp("mkdir",args[0]) == 0)
+    else if (strcmp("mkdir", args[0]) == 0)
     {
         if (argc >= 2)
         {
-           
+
             char *dirname = args[1];
             mkdir_command(dirname, dir_stack[*dir_stack_index - 1]);
         }
@@ -874,21 +875,24 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
             syscall_user(6, (uint32_t)"[ERROR]: Usage: mkdir <dirname>\n", 33, RED);
         }
     }
-    else if(strcmp("find",args[0]) == 0){
-        if(argc>= 2){
+    else if (strcmp("find", args[0]) == 0)
+    {
+        if (argc >= 2)
+        {
             find(args[1]);
-        }else{
-            syscall_user(6, (uint32_t)"INVALID USAGE!\n", 16, RED);
+        }
+        else
+        {
+            syscall_user(6, (uint32_t) "[ERROR]: Usage: find <folder/filename> \n", 41, RED);
         }
     }
-    else if (strcmp("cat",args[0]) == 0)
+    else if (strcmp("cat", args[0]) == 0)
     {
         // Handle cat command
         char *filename = args[1];
-        ket(filename, dir_stack, dir_stack_index,dir_name_stack);
-
+        ket(filename, dir_stack, dir_stack_index, dir_name_stack);
     }
-    else if (strcmp("clear",args[0]) == 0)
+    else if (strcmp("clear", args[0]) == 0)
     {
         syscall_user(9, 0, 0, 0);
     }
