@@ -290,31 +290,23 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
     }
 }
 
-void ket(char* Filename, uint32_t *dir_stack, uint8_t *dir_stack_index){
+void ket(char* Filename, uint32_t *dir_stack, uint8_t *dir_stack_index,  char (*dir_name_stack)[8]){
   // cat : Menuliskan sebuah file sebagai text file ke layar (Gunakan format
     int parseId = 0;
       // LF newline)
-    char dot[2] = "./";
-    char ddot[3] = "../";
-    if (strcmp(dot,Filename)==0){
+    if (strcmp("./",Filename)==0){
         Filename = Filename + 2;
     }
-    dot[0] = 0;
-    dot[1 ] = 1;
-    if (strcmp(ddot,Filename)==0){
+    if (strcmp("../",Filename)==0){
         do {
             parseId += 1;
             Filename = Filename + 3;
-        }while (strcmp(ddot,Filename)==0);
+        }while (strcmp("../",Filename)==0);
         if (*dir_stack_index <= parseId){
-            char err[18] = "INVALID FILE PATH\n";
-            syscall_user(6, (uint32_t)err, 18, RED);
+            syscall_user(6, (uint32_t)"INVALID FILE PATH\n", 18, RED);
             return;
         }
     }
-    ddot[0] = 0;
-    ddot[1] = 0;
-    ddot[2] = 0;
     struct FAT32DirectoryTable parent_dir;
     struct FAT32DriverRequest request = {
         .buf = &parent_dir,
@@ -322,34 +314,34 @@ void ket(char* Filename, uint32_t *dir_stack, uint8_t *dir_stack_index){
         .ext = "\0\0\0",
         .buffer_size = 0,
     };
+    uint8_t i = 0;
+    for (;i<8;i++){
+        request.name[i] = dir_name_stack[*dir_stack_index-(parseId+1)][i];
+    }
     int8_t retcode;
     syscall_user(1,(uint32_t)&request,(uint32_t)&retcode,0);
     syscall_user(10, (uint32_t)&parent_dir, dir_stack[*dir_stack_index-(parseId+1)], 0);
     if (retcode!=0){
-        char err[15] = "FILE NOT FOUND\n";
-        syscall_user(6, (uint32_t)err, 15, RED);
+        syscall_user(6, (uint32_t)"FILE NOT FOUND\n", 15, RED);
         return;
     }
     char realFileName[8] = "\0\0\0\0\0\0\0\0";
     parseId = 0;
-    char tiExTi[3] = "txt";
     while (strcmp(".",Filename+parseId)!=0 && parseId < 8){
         realFileName[parseId] = Filename[parseId];
         parseId += 1;
     }
     parseId += 1;
     if (parseId > 8){
-        char err1[18] = "INVALID FILE NAME\n";
-        syscall_user(6, (uint32_t)err1, 18, RED);
+        syscall_user(6, (uint32_t)"INVALID FILE NAME\n", 18, RED);
         return;
-    }else if (strcmp(Filename+parseId,tiExTi)!=0){
-        char err2[23] = "INVALID FILE EXTENSION\n";
-        syscall_user(6, (uint32_t)err2, 23, RED);
+    }else if (strcmp("txt",Filename+parseId)!=0){
+        syscall_user(6, (uint32_t)"INVALID FILE EXTENSION\n", 23, RED);
         return;
     }
     parseId = 0;
     for (;parseId<64;parseId++){
-        if (strcmp(parent_dir.table[parseId].name,realFileName)==0 && strcmp(parent_dir.table[parseId].ext,tiExTi)==0){
+        if (strcmp(parent_dir.table[parseId].name,realFileName)==0 && strcmp("txt",parent_dir.table[parseId].ext)==0){
             struct ClusterBuffer fileBuff;
 
             struct FAT32DriverRequest request2 = {
@@ -358,13 +350,17 @@ void ket(char* Filename, uint32_t *dir_stack, uint8_t *dir_stack_index){
             .ext = "txt",
             .buffer_size = parent_dir.table[parseId].filesize,
             };
-            syscall_user(0,(uint32_t)&request2,(uint32_t)&retcode,request2.parent_cluster_number);
+            i = 0;
+            for (;i<8;i++){
+                request2.name[i] = realFileName[i];
+            }
+            syscall_user(0,(uint32_t)&request2,(uint32_t)&retcode,0);
             if (retcode==0){
                 syscall_user(6,(uint32_t)fileBuff.buf,request2.buffer_size,WHITE);
+                syscall_user(6, (uint32_t) "\n", 1, WHITE);
                 return;
             }else{
-                char err3[15] = "FAILED TO READ\n";
-                syscall_user(6, (uint32_t)err3, 15, RED);
+                syscall_user(6, (uint32_t)"FAILED TO READ\n", 15, RED);
                 return;
             }
             
@@ -441,7 +437,7 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
     {
         // Handle cat command
         char *filename = args[1];
-        ket(filename, dir_stack, dir_stack_index);
+        ket(filename, dir_stack, dir_stack_index,dir_name_stack);
 
     }
     else if (strcmp("clear",args[0]) == 0)
