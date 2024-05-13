@@ -35,10 +35,3 @@ process_context_switch:
     mov ecx, [ecx+24]    
 
     iret
-
-
-
-
-
-
-    

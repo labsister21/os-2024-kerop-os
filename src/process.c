@@ -37,9 +37,10 @@ struct ProcessControlBlock* process_get_current_running_pcb_pointer(void){
         if (_process_list[i].metadata.state == RUNNING)
         {
             pcb = &_process_list[i];
-            break;
+            return pcb;
         }
     }
+    
     return pcb;
 }
 

@@ -16,7 +16,6 @@
     "stddef.h": "c",
     "process.h": "c",
     "scheduler.h": "c",
-    "*.s": "c",
     "paging.h": "c"
   },
   "C_Cpp_Runner.cCompilerPath": "gcc",

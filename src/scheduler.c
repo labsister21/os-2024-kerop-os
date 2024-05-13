@@ -23,14 +23,15 @@ void scheduler_save_context_to_current_running_pcb(struct Context ctx){
     }
 }
 
-
 /**
  * Trigger the scheduler algorithm and context switch to new process
  * Fungsi scheduler_switch_to_next_process() akan menggunakan scheduling round robin algorithm untuk memilih dan mengganti process lama dengan yang baru untuk dieksekusi.
  */
 __attribute__((noreturn)) void scheduler_switch_to_next_process(void){
     struct ProcessControlBlock *pcb = process_get_current_running_pcb_pointer();
-    if (pcb == NULL) pcb = &_process_list[0];
+    if (pcb == NULL){
+        pcb = &_process_list[0];
+    }
 
     uint32_t current_pid = pcb->metadata.pid;
     uint32_t next_pid = current_pid + 1;
@@ -39,7 +40,7 @@ __attribute__((noreturn)) void scheduler_switch_to_next_process(void){
         next_pid = 0;
     }
     // Find next process to run
-    while (_process_list[next_pid].metadata.state != READY || process_manager_state.list_of_process[next_pid] == false) {
+    while (process_manager_state.list_of_process[next_pid] == false) {
         next_pid++;
         if (next_pid >= PROCESS_COUNT_MAX){
             next_pid = 0;

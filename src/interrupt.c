@@ -122,14 +122,15 @@ void syscall(struct InterruptFrame frame)
 
 void main_interrupt_handler(struct InterruptFrame frame)
 {
-
     switch (frame.int_number)
     {
     case(PIC1_OFFSET + IRQ_TIMER):
+        struct PageDirectory *current = paging_get_current_page_directory_addr();
         struct Context ctx = {
             .cpu = frame.cpu,
             .eflags = frame.int_stack.eflags,
             .eip = frame.int_stack.eip,
+            .page_directory_virtual_addr = current,
         };
         scheduler_save_context_to_current_running_pcb(ctx);
 
