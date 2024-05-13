@@ -248,8 +248,9 @@ void mkdir_command(char *dirname, uint32_t parent_cluster_number)
     request.buffer_size = 0;
     int8_t retcode;
     syscall_user(2, (uint32_t)&request, (uint32_t)&retcode, 0);
-    if (retcode!=0){
-        syscall_user(6, (uint32_t)"[ERROR] FAILED TO MAKE DIR\n", 27, RED);
+    if (retcode != 0)
+    {
+        syscall_user(6, (uint32_t) "[ERROR] FAILED TO MAKE DIR\n", 27, RED);
     }
 }
 
@@ -313,6 +314,7 @@ void eles(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[
     // read cd
     int8_t errorcde;
     syscall_user(1, (uint32_t)&req, (uint32_t)&errorcde, 0);
+    syscall_user(10, (uint32_t)&now_table, dir_stack[*dir_stack_index - 1], 0);
     if (errorcde == 0)
     {
         for (uint32_t i = 1; i < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry);
@@ -422,7 +424,7 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
                 }
             }
         }
-        syscall_user(6, (uint32_t)"[ERROR] FILE NOT FOUND\n", 23, RED);
+        syscall_user(6, (uint32_t) "[ERROR] FILE NOT FOUND\n", 23, RED);
     }
 }
 void bfs_find(char *target_name)
@@ -443,7 +445,6 @@ void bfs_find(char *target_name)
     while (!isEmpty(&queue))
     {
         FileInfo current_info = dequeue(&queue);
-        
 
         // Read current directory contents
         struct FAT32DirectoryTable dir_table;
@@ -581,10 +582,11 @@ void ket(char *Filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
         request.name[i] = dir_name_stack[*dir_stack_index - (parseId + 1)][i];
     }
     int8_t retcode;
-    syscall_user(1,(uint32_t)&request,(uint32_t)&retcode,0);
-    syscall_user(10, (uint32_t)&parent_dir, dir_stack[*dir_stack_index-(parseId+1)], 0);
-    if (retcode!=0){
-        syscall_user(6, (uint32_t)"FAILED TO READ FOLDER\n", 22, RED);
+    syscall_user(1, (uint32_t)&request, (uint32_t)&retcode, 0);
+    syscall_user(10, (uint32_t)&parent_dir, dir_stack[*dir_stack_index - (parseId + 1)], 0);
+    if (retcode != 0)
+    {
+        syscall_user(6, (uint32_t) "FAILED TO READ FOLDER\n", 22, RED);
         return;
     }
     char realFileName[9] = "\0\0\0\0\0\0\0\0\0";
@@ -634,27 +636,31 @@ void ket(char *Filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
                 syscall_user(6, (uint32_t) "FAILED TO READ\n", 15, RED);
                 return;
             }
-            
-
         }
-    }   
+    }
 }
-void emvi(char* filename,char* dest ,uint32_t *dir_stack, uint8_t *dir_stack_index,char (*dir_name_stack)[8]){
+void emvi(char *filename, char *dest, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
+{
     int parseId = 0;
     // LF newline)
-    if (strcmp("./",filename)==0){
+    if (strcmp("./", filename) == 0)
+    {
         filename = filename + 2;
     }
-    if (strcmp("./",dest)==0){
+    if (strcmp("./", dest) == 0)
+    {
         dest = dest + 2;
     }
-    if (strcmp("../",dest)==0){
-        do {
+    if (strcmp("../", dest) == 0)
+    {
+        do
+        {
             parseId += 1;
             dest = dest + 3;
-        }while (strcmp("../",dest)==0);
-        if (*dir_stack_index <= parseId){
-            syscall_user(6, (uint32_t)"INVALID DESTINATION PATH\n", 18, RED);
+        } while (strcmp("../", dest) == 0);
+        if (*dir_stack_index <= parseId)
+        {
+            syscall_user(6, (uint32_t) "INVALID DESTINATION PATH\n", 18, RED);
             return;
         }
     }
@@ -663,52 +669,57 @@ void emvi(char* filename,char* dest ,uint32_t *dir_stack, uint8_t *dir_stack_ind
     uint16_t cluster_high;
     uint16_t cluster_low;
     uint32_t filesize;
-     struct FAT32DirectoryTable curr_dir;
+    struct FAT32DirectoryTable curr_dir;
     struct FAT32DriverRequest requestcurr = {
         .buf = &curr_dir,
-        .parent_cluster_number = dir_stack[*dir_stack_index-1],
+        .parent_cluster_number = dir_stack[*dir_stack_index - 1],
         .ext = "\0\0\0",
         .buffer_size = 0,
     };
     uint8_t i = 0;
-    for (;i<8;i++){
-        requestcurr.name[i] = dir_name_stack[*dir_stack_index-1][i];
+    for (; i < 8; i++)
+    {
+        requestcurr.name[i] = dir_name_stack[*dir_stack_index - 1][i];
     }
     int8_t retcode;
-    syscall_user(1,(uint32_t)&requestcurr,(uint32_t)&retcode,0);
-    syscall_user(10, (uint32_t)&curr_dir, dir_stack[*dir_stack_index-1], 0);
-    if (retcode!=0){
-        syscall_user(6, (uint32_t)"FAILED TO READ SRCFOLDER\n", 25, RED);
+    syscall_user(1, (uint32_t)&requestcurr, (uint32_t)&retcode, 0);
+    syscall_user(10, (uint32_t)&curr_dir, dir_stack[*dir_stack_index - 1], 0);
+    if (retcode != 0)
+    {
+        syscall_user(6, (uint32_t) "FAILED TO READ SRCFOLDER\n", 25, RED);
         return;
     }
     i = 0;
-    for (;i<64;i++){
-        if (strcmp(curr_dir.table[i].name,filename)==0){
+    for (; i < 64; i++)
+    {
+        if (strcmp(curr_dir.table[i].name, filename) == 0)
+        {
             uint8_t k = 0;
-            for (;k<8;k++){
+            for (; k < 8; k++)
+            {
                 curr_dir.table[i].name[k] = 0;
             }
-            k=0;
-            for (;k<3;k++){
+            k = 0;
+            for (; k < 3; k++)
+            {
                 curr_dir.table[i].ext[k] = 0;
-
             }
             attribute = curr_dir.table[i].attribute;
-            user_attribute=curr_dir.table[i].user_attribute;
-            cluster_high= curr_dir.table[i].cluster_high;
-            cluster_low = curr_dir.table[i].cluster_low ;
+            user_attribute = curr_dir.table[i].user_attribute;
+            cluster_high = curr_dir.table[i].cluster_high;
+            cluster_low = curr_dir.table[i].cluster_low;
             filesize = curr_dir.table[i].filesize;
             curr_dir.table[i].attribute = 0;
-            
+
             curr_dir.table[i].user_attribute = 0;
             curr_dir.table[i].cluster_high = 0;
             curr_dir.table[i].cluster_low = 0;
-            curr_dir.table[i].filesize   = 0;
+            curr_dir.table[i].filesize = 0;
 
-            syscall_user(11,(uint32_t)&curr_dir,dir_stack[*dir_stack_index-1],0);
+            syscall_user(11, (uint32_t)&curr_dir, dir_stack[*dir_stack_index - 1], 0);
         }
     }
-    uint32_t parentCluster = dir_stack[*dir_stack_index-(parseId+1)];
+    uint32_t parentCluster = dir_stack[*dir_stack_index - (parseId + 1)];
     struct FAT32DirectoryTable parent_dir;
     struct FAT32DriverRequest request = {
         .buf = &parent_dir,
@@ -717,50 +728,57 @@ void emvi(char* filename,char* dest ,uint32_t *dir_stack, uint8_t *dir_stack_ind
         .buffer_size = 0,
     };
     i = 0;
-    for (;i<8;i++){
-        request.name[i] = dir_name_stack[*dir_stack_index-(parseId+1)][i];
+    for (; i < 8; i++)
+    {
+        request.name[i] = dir_name_stack[*dir_stack_index - (parseId + 1)][i];
     }
-    syscall_user(1,(uint32_t)&request,(uint32_t)&retcode,0);
-    syscall_user(10, (uint32_t)&parent_dir, dir_stack[*dir_stack_index-(parseId+1)], 0);
-    if (retcode!=0){
-        syscall_user(6, (uint32_t)"FAILED TO READ DSTFOLDER\n", 25, RED);
+    syscall_user(1, (uint32_t)&request, (uint32_t)&retcode, 0);
+    syscall_user(10, (uint32_t)&parent_dir, dir_stack[*dir_stack_index - (parseId + 1)], 0);
+    if (retcode != 0)
+    {
+        syscall_user(6, (uint32_t) "FAILED TO READ DSTFOLDER\n", 25, RED);
         return;
     }
     parseId = 0;
-    for (;parseId<64;parseId++){
-        if (parent_dir.table[parseId].user_attribute!=UATTR_NOT_EMPTY){
+    for (; parseId < 64; parseId++)
+    {
+        if (parent_dir.table[parseId].user_attribute != UATTR_NOT_EMPTY)
+        {
             i = 0;
             char destName[9] = "\0\0\0\0\0\0\0\0\0";
             uint8_t j = 0;
-            while (strcmp(".",dest+j)!=0 && j < 9){
+            while (strcmp(".", dest + j) != 0 && j < 9)
+            {
                 destName[j] = dest[j];
                 j += 1;
             }
-            if (j > 8){
-                syscall_user(6, (uint32_t)"INVALID SOURCE FILE NAME\n", 25, RED);
+            if (j > 8)
+            {
+                syscall_user(6, (uint32_t) "INVALID SOURCE FILE NAME\n", 25, RED);
                 return;
             }
-            for (;i<8;i++){
+            for (; i < 8; i++)
+            {
                 parent_dir.table[parseId].name[i] = destName[i];
             }
-            i=0;
-            for (;i<3;i++){
-                parent_dir.table[parseId].ext[i] = dest[j+i+1];
-
+            i = 0;
+            for (; i < 3; i++)
+            {
+                parent_dir.table[parseId].ext[i] = dest[j + i + 1];
             }
             parent_dir.table[parseId].attribute = attribute;
-            
+
             parent_dir.table[parseId].user_attribute = user_attribute;
             parent_dir.table[parseId].cluster_high = cluster_high;
             parent_dir.table[parseId].cluster_low = cluster_low;
             parent_dir.table[parseId].filesize = filesize;
-            syscall_user(11,(uint32_t)&parent_dir,parentCluster,0);
+            syscall_user(11, (uint32_t)&parent_dir, parentCluster, 0);
             return;
         }
     }
-
 }
-void erem(char* filename,uint32_t *dir_stack, uint8_t *dir_stack_index){
+void erem(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index)
+{
     // cat : Menuliskan sebuah file sebagai text file ke layar (Gunakan format
     int parseId = 0;
     // LF newline)
@@ -781,7 +799,7 @@ void erem(char* filename,uint32_t *dir_stack, uint8_t *dir_stack_index){
             return;
         }
     }
-    
+
     struct FAT32DriverRequest request = {
         .parent_cluster_number = dir_stack[*dir_stack_index - (parseId + 1)],
         .ext = "\0\0\0",
@@ -800,40 +818,45 @@ void erem(char* filename,uint32_t *dir_stack, uint8_t *dir_stack_index){
         syscall_user(6, (uint32_t) "INVALID FILE NAME\n", 18, RED);
         return;
     }
-    request.ext[0] = filename[parseId+1];
-    request.ext[1] = filename[parseId+2];
-    request.ext[2] = filename[parseId+3];
+    request.ext[0] = filename[parseId + 1];
+    request.ext[1] = filename[parseId + 2];
+    request.ext[2] = filename[parseId + 3];
 
     for (; i < 8; i++)
     {
         request.name[i] = realFileName[i];
     }
     int8_t retcode;
-    syscall_user(12,(uint32_t)&request,(uint32_t)&retcode,0);
-    if (retcode!=0){
-        syscall_user(6, (uint32_t)"FAILED TO DELETE FOLDER\n", 24, RED);
+    syscall_user(12, (uint32_t)&request, (uint32_t)&retcode, 0);
+    if (retcode != 0)
+    {
+        syscall_user(6, (uint32_t) "FAILED TO DELETE FOLDER\n", 24, RED);
         return;
     }
-    
-
 }
-void cepe(char* filename,char* dest ,uint32_t *dir_stack, uint8_t *dir_stack_index,char (*dir_name_stack)[8]){
+void cepe(char *filename, char *dest, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
+{
     int parseId = 0;
     int8_t retcode;
     // LF newline)
-    if (strcmp("./",filename)==0){
+    if (strcmp("./", filename) == 0)
+    {
         filename = filename + 2;
     }
-    if (strcmp("./",dest)==0){
+    if (strcmp("./", dest) == 0)
+    {
         dest = dest + 2;
     }
-    if (strcmp("../",dest)==0){
-        do {
+    if (strcmp("../", dest) == 0)
+    {
+        do
+        {
             parseId += 1;
             dest = dest + 3;
-        }while (strcmp("../",dest)==0);
-        if (*dir_stack_index <= parseId){
-            syscall_user(6, (uint32_t)"INVALID DESTINATION PATH\n", 18, RED);
+        } while (strcmp("../", dest) == 0);
+        if (*dir_stack_index <= parseId)
+        {
+            syscall_user(6, (uint32_t) "INVALID DESTINATION PATH\n", 18, RED);
             return;
         }
     }
@@ -846,26 +869,27 @@ void cepe(char* filename,char* dest ,uint32_t *dir_stack, uint8_t *dir_stack_ind
     struct FAT32DirectoryTable curr_dir;
     struct FAT32DriverRequest requestcurr = {
         .buf = &curr_dir,
-        .parent_cluster_number = dir_stack[*dir_stack_index-1],
+        .parent_cluster_number = dir_stack[*dir_stack_index - 1],
         .ext = "\0\0\0",
         .buffer_size = 0,
-        
+
     };
     uint8_t i = 0;
-    for (;i<8;i++){
-        requestcurr.name[i] = dir_name_stack[*dir_stack_index-1][i];
-
+    for (; i < 8; i++)
+    {
+        requestcurr.name[i] = dir_name_stack[*dir_stack_index - 1][i];
     }
-    syscall_user(1,(uint32_t)&requestcurr,(uint32_t)&retcode,0);
-    syscall_user(10, (uint32_t)&curr_dir, dir_stack[*dir_stack_index-1], 0);
-    if (retcode!=0){
-        syscall_user(6, (uint32_t)"FAILED TO READ DSTFOLDER\n", 25, RED);
+    syscall_user(1, (uint32_t)&requestcurr, (uint32_t)&retcode, 0);
+    syscall_user(10, (uint32_t)&curr_dir, dir_stack[*dir_stack_index - 1], 0);
+    if (retcode != 0)
+    {
+        syscall_user(6, (uint32_t) "FAILED TO READ DSTFOLDER\n", 25, RED);
         return;
     }
     // read source file size
     uint32_t filesize;
     struct FAT32DriverRequest request = {
-        .parent_cluster_number = dir_stack[*dir_stack_index-1],
+        .parent_cluster_number = dir_stack[*dir_stack_index - 1],
         .ext = "\0\0\0",
     };
     char realFileName[9] = "\0\0\0\0\0\0\0\0\0";
@@ -880,18 +904,20 @@ void cepe(char* filename,char* dest ,uint32_t *dir_stack, uint8_t *dir_stack_ind
         syscall_user(6, (uint32_t) "INVALID FILE NAME\n", 18, RED);
         return;
     }
-    request.ext[0] = filename[parseId+1];
-    request.ext[1] = filename[parseId+2];
-    request.ext[2] = filename[parseId+3];
+    request.ext[0] = filename[parseId + 1];
+    request.ext[1] = filename[parseId + 2];
+    request.ext[2] = filename[parseId + 3];
     i = 0;
-    for (;i<8;i++){
-        request.name[i]= realFileName[i];
+    for (; i < 8; i++)
+    {
+        request.name[i] = realFileName[i];
     }
-    
-    
+
     i = 0;
-    for (;i<64;i++){
-        if (strcmp(curr_dir.table[i].name,realFileName)==0){
+    for (; i < 64; i++)
+    {
+        if (strcmp(curr_dir.table[i].name, realFileName) == 0)
+        {
             // attribute = curr_dir.table[i].attribute;
             // user_attribute=curr_dir.table[i].user_attribute;
             // cluster_high= curr_dir.table[i].cluster_high;
@@ -902,9 +928,10 @@ void cepe(char* filename,char* dest ,uint32_t *dir_stack, uint8_t *dir_stack_ind
     uint8_t buffer[filesize];
     request.buf = buffer;
     request.buffer_size = filesize;
-    syscall_user(0,(uint32_t)&request,(uint32_t)&retcode,0);
-    if (retcode!=0){
-        syscall_user(6, (uint32_t)"FAILED TO READ SRCFILE\n", 23, RED);
+    syscall_user(0, (uint32_t)&request, (uint32_t)&retcode, 0);
+    if (retcode != 0)
+    {
+        syscall_user(6, (uint32_t) "FAILED TO READ SRCFILE\n", 23, RED);
         return;
     }
     // delete
@@ -925,29 +952,29 @@ void cepe(char* filename,char* dest ,uint32_t *dir_stack, uint8_t *dir_stack_ind
         syscall_user(6, (uint32_t) "INVALID FILE NAME\n", 18, RED);
         return;
     }
-    request2.ext[0] = dest[parseId+1];
-    request2.ext[1] = dest[parseId+2];
-    request2.ext[2] = dest[parseId+3];
+    request2.ext[0] = dest[parseId + 1];
+    request2.ext[1] = dest[parseId + 2];
+    request2.ext[2] = dest[parseId + 3];
     i = 0;
     for (; i < 8; i++)
     {
         request2.name[i] = realFileDestName[i];
     }
-    syscall_user(12,(uint32_t)&request2,(uint32_t)&retcode,0);
-    if (retcode!=0){
-        syscall_user(6, (uint32_t)"FAILED TO DELETE FOLDER\n", 24, RED);
+    syscall_user(12, (uint32_t)&request2, (uint32_t)&retcode, 0);
+    if (retcode != 0)
+    {
+        syscall_user(6, (uint32_t) "FAILED TO DELETE FOLDER\n", 24, RED);
         return;
     }
     // write
     request2.buffer_size = filesize;
     request2.buf = buffer;
-    syscall_user(2,(uint32_t)&request2,(uint32_t)&retcode,0);
-    if (retcode!=0){
-        syscall_user(6, (uint32_t)"FAILED TO WRITE FOLDER\n", 23, RED);
+    syscall_user(2, (uint32_t)&request2, (uint32_t)&retcode, 0);
+    if (retcode != 0)
+    {
+        syscall_user(6, (uint32_t) "FAILED TO WRITE FOLDER\n", 23, RED);
         return;
     }
-
-
 }
 void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
 
@@ -998,21 +1025,27 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
                     syscall_user(5, (uint32_t) "c", YELLOW, 0);
                     syscall_user(5, (uint32_t) "d", YELLOW, 0);
                     syscall_user(5, (uint32_t) " ", WHITE, 0);
-                }else if (buff[0]=='m' && buff[1]=='v' && buff[2]==' '){
+                }
+                else if (buff[0] == 'm' && buff[1] == 'v' && buff[2] == ' ')
+                {
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
                     syscall_user(5, (uint32_t) "m", BLUE, 0);
                     syscall_user(5, (uint32_t) "v", BLUE, 0);
                     syscall_user(5, (uint32_t) " ", WHITE, 0);
-                }else if (buff[0]=='r' && buff[1]=='m' && buff[2]==' '){
+                }
+                else if (buff[0] == 'r' && buff[1] == 'm' && buff[2] == ' ')
+                {
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
                     syscall_user(5, (uint32_t) "r", YELLOW, 0);
                     syscall_user(5, (uint32_t) "m", YELLOW, 0);
                     syscall_user(5, (uint32_t) " ", WHITE, 0);
-                }else if (buff[0]=='c' && buff[1]=='p' && buff[2]==' '){
+                }
+                else if (buff[0] == 'c' && buff[1] == 'p' && buff[2] == ' ')
+                {
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
@@ -1034,8 +1067,11 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
                     syscall_user(5, (uint32_t) "t", AQUA, 0);
                     syscall_user(5, (uint32_t) " ", WHITE, 0);
                 }
-            }else if (i==5){
-                if (buff[0]=='f' && buff[1]=='i' && buff[2]=='n' && buff[3]=='d' && buff[4]==' '){
+            }
+            else if (i == 5)
+            {
+                if (buff[0] == 'f' && buff[1] == 'i' && buff[2] == 'n' && buff[3] == 'd' && buff[4] == ' ')
+                {
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
@@ -1046,7 +1082,9 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
                     syscall_user(5, (uint32_t) "n", LIGHT_PURPLE, 0);
                     syscall_user(5, (uint32_t) "d", LIGHT_PURPLE, 0);
                     syscall_user(5, (uint32_t) " ", WHITE, 0);
-                }else if (buff[0]=='c' && buff[1]=='l' && buff[2]=='e' && buff[3]=='a' && buff[4]=='r'){
+                }
+                else if (buff[0] == 'c' && buff[1] == 'l' && buff[2] == 'e' && buff[3] == 'a' && buff[4] == 'r')
+                {
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
@@ -1111,7 +1149,7 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
         }
         else
         {
-            syscall_user(6, (uint32_t)"[ERROR]: Usage: mkdir <dirname>\n", 33, RED);
+            syscall_user(6, (uint32_t) "[ERROR]: Usage: mkdir <dirname>\n", 33, RED);
         }
     }
     else if (strcmp("find", args[0]) == 0)
@@ -1135,31 +1173,37 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
     {
         syscall_user(9, 0, 0, 0);
     }
-    else if (strcmp("mv",args[0]) == 0)
+    else if (strcmp("mv", args[0]) == 0)
     {
-       if (argc == 3)
+        if (argc == 3)
         {
-            emvi(args[1],args[2],dir_stack,dir_stack_index,dir_name_stack);
+            emvi(args[1], args[2], dir_stack, dir_stack_index, dir_name_stack);
         }
         else
         {
-            syscall_user(6, (uint32_t)"[ERROR]: Usage: mv <sourcename> <destpath>\n", 42, RED);
+            syscall_user(6, (uint32_t) "[ERROR]: Usage: mv <sourcename> <destpath>\n", 42, RED);
         }
     }
-    else if(strcmp("rm",args[0])==0){
-        if (argc == 2){
-            erem(args[1],dir_stack,dir_stack_index);
-        }else
+    else if (strcmp("rm", args[0]) == 0)
+    {
+        if (argc == 2)
         {
-            syscall_user(6, (uint32_t)"[ERROR]: Usage: rm <filepath>\n", 30, RED);
+            erem(args[1], dir_stack, dir_stack_index);
+        }
+        else
+        {
+            syscall_user(6, (uint32_t) "[ERROR]: Usage: rm <filepath>\n", 30, RED);
         }
     }
-    else if (strcmp("cp",args[0])==0){
-        if (argc==3){
-            cepe(args[1],args[2],dir_stack,dir_stack_index,dir_name_stack);
-        }else
+    else if (strcmp("cp", args[0]) == 0)
+    {
+        if (argc == 3)
         {
-            syscall_user(6, (uint32_t)"[ERROR]: Usage: rm <filesrcpath> <filesdestpath>\n", 49, RED);
+            cepe(args[1], args[2], dir_stack, dir_stack_index, dir_name_stack);
+        }
+        else
+        {
+            syscall_user(6, (uint32_t) "[ERROR]: Usage: rm <filesrcpath> <filesdestpath>\n", 49, RED);
         }
     }
     else
