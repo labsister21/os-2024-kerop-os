@@ -89,6 +89,8 @@ struct ProcessManagerState {
     uint32_t active_process_count;
 };
 
+extern struct ProcessManagerState process_manager_state;
+
 /**
  * Structure data containing information about a process
  *
@@ -103,12 +105,13 @@ struct ProcessControlBlock {
         PROCESS_STATE state;
     } metadata;
 
+    struct Context context;
+
     struct {
         void     *virtual_addr_used[PROCESS_PAGE_FRAME_COUNT_MAX];
         uint32_t page_frame_used_count;
     } memory;
 
-    struct Context context;
 };
 
 //deklarasi & definisi sebuah variabel array statik PCB _process_list berukuran PROCESS_COUNT_MAX.

@@ -4,6 +4,8 @@
 #include "header/driver/keyboard.h"
 #include "header/cpu/gdt.h"
 #include "header/filesystem/fat32.h"
+#include "header/process/process.h"
+#include "header/scheduler/scheduler.h"
 
 struct TSSEntry _interrupt_tss_entry = {
     .ss0 = GDT_KERNEL_DATA_SEGMENT_SELECTOR,
@@ -119,6 +121,19 @@ void main_interrupt_handler(struct InterruptFrame frame)
 
     switch (frame.int_number)
     {
+    case(PIC1_OFFSET + IRQ_TIMER):
+        struct Context ctx = {
+            .cpu = frame.cpu,
+            .eflags = frame.int_stack.eflags,
+            .eip = frame.int_stack.eip,
+        };
+        scheduler_save_context_to_current_running_pcb(ctx);
+
+        pic_ack(IRQ_TIMER);
+        
+        scheduler_switch_to_next_process();
+        
+        break;
     case IRQ_KEYBOARD + PIC1_OFFSET:
         keyboard_isr();
         break;
