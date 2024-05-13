@@ -46,14 +46,20 @@ void flush_single_tlb(void *virtual_addr)
     asm volatile("invlpg (%0)" : /* <Empty> */ : "b"(virtual_addr) : "memory");
 }
 
+uint32_t ceil32(float n){
+    if((int) n == n){
+        return n;
+    }
+    return (uint32_t) n + 1;
+}
+
 /* --- Memory Management --- */
 // TODO: Implement
 bool paging_allocate_check(uint32_t amount)
 {
     // TODO: Check whether requested amount is available
-    if (page_manager_state.free_page_frame_count < (amount >> (22)))
-        return false;
-    return true;
+    uint32_t requirwd_pages = ceil32(amount / (float)PAGE_FRAME_SIZE);
+    return page_manager_state.free_page_frame_count >= requirwd_pages;
 }
 
 bool paging_allocate_user_page_frame(struct PageDirectory *page_dir, void *virtual_addr)
@@ -68,11 +74,6 @@ bool paging_allocate_user_page_frame(struct PageDirectory *page_dir, void *virtu
      *     > user bit       true
      *     > pagesize 4 mb  true
      */
-
-    if (!paging_allocate_check((uint32_t)virtual_addr))
-    {
-        return false;
-    }
 
     for (int i = 1; i < PAGE_FRAME_MAX_COUNT; i++)
     {

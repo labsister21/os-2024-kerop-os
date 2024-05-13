@@ -6,7 +6,7 @@
 struct ProcessControlBlock _process_list[PROCESS_COUNT_MAX] = {0};
 
 // Add the missing declaration of process_manager_state
-static struct  ProcessManagerState process_manager_state = {
+struct ProcessManagerState process_manager_state = {
     .list_of_process = {false},
     .active_process_count = 0
 };
@@ -80,15 +80,14 @@ int32_t process_create_user_process(struct FAT32DriverRequest request) {
 
     new_pcb->metadata.state = READY;
     new_pcb->memory.page_frame_used_count = 0;
-    new_pcb->memory.virtual_addr_used[new_pcb->memory.page_frame_used_count++] = (void*) request.buf;
-
-    // Setelah virtual memory untuk process telah dialokasikan, untuk sementara ganti page directory ke virtual address space baru dan lakukan pembacaan executable dari file system ke memory. Kembalikan virtual address space ke sebelum proses load executable setelah operasi file system selesai.
+    // new_pcb->memory.virtual_addr_used[new_pcb->memory.page_frame_used_count++] = (void*) request.buf;
 
     struct PageDirectory *prev_page_dir = paging_get_current_page_directory_addr();
     paging_use_page_directory(new_page_dir);
 
-    paging_allocate_user_page_frame(new_page_dir,0);
+    paging_allocate_user_page_frame(new_page_dir,request.buf);
     paging_allocate_user_page_frame(new_page_dir,(void*) 0xBFFFFFFC);
+    
 
     // Load executable to memory
     read(request);
@@ -98,8 +97,8 @@ int32_t process_create_user_process(struct FAT32DriverRequest request) {
 
     // Set up process context
     new_pcb->context.eip = (uint32_t) request.buf;
-    new_pcb->context.cpu.stack.esp = 0xBFFFFFFC;
-    new_pcb->context.cpu.stack.ebp = 0xBFFFFFFC;
+    new_pcb->context.cpu.stack.esp = KERNEL_VIRTUAL_ADDRESS_BASE - 4;
+    new_pcb->context.cpu.stack.ebp = KERNEL_VIRTUAL_ADDRESS_BASE - 4;
     new_pcb->context.cpu.segment.gs = GDT_USER_DATA_SEGMENT_SELECTOR | 0x3;
     new_pcb->context.cpu.segment.fs = GDT_USER_DATA_SEGMENT_SELECTOR | 0x3;
     new_pcb->context.cpu.segment.ds = GDT_USER_DATA_SEGMENT_SELECTOR | 0x3;
@@ -114,4 +113,25 @@ int32_t process_create_user_process(struct FAT32DriverRequest request) {
 
 exit_cleanup:
     return retcode;
+}
+
+/**
+ * Destroy process then release page directory and process control block
+ * 
+ * @param pid Process ID to delete
+ * @return    True if process destruction success
+ */
+bool process_destroy(uint32_t pid){
+    if(pid >= PROCESS_COUNT_MAX){
+        return false;
+    }
+    if(!process_manager_state.list_of_process[pid]){
+        return false;
+    }
+    struct ProcessControlBlock *pcb = &_process_list[pid];
+    struct PageDirectory *page_dir = pcb->context.page_directory_virtual_addr;
+    paging_free_page_directory(page_dir);
+    process_manager_state.list_of_process[pid] = false;
+    process_manager_state.active_process_count--;
+    return true;
 }

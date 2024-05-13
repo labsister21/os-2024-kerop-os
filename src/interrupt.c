@@ -4,8 +4,8 @@
 #include "header/driver/keyboard.h"
 #include "header/cpu/gdt.h"
 #include "header/filesystem/fat32.h"
-
-
+#include "header/process/process.h"
+#include "header/scheduler/scheduler.h"
 
 struct TSSEntry _interrupt_tss_entry = {
     .ss0 = GDT_KERNEL_DATA_SEGMENT_SELECTOR,
@@ -125,6 +125,19 @@ void main_interrupt_handler(struct InterruptFrame frame)
 
     switch (frame.int_number)
     {
+    case(PIC1_OFFSET + IRQ_TIMER):
+        struct Context ctx = {
+            .cpu = frame.cpu,
+            .eflags = frame.int_stack.eflags,
+            .eip = frame.int_stack.eip,
+        };
+        scheduler_save_context_to_current_running_pcb(ctx);
+
+        pic_ack(IRQ_TIMER);
+        
+        scheduler_switch_to_next_process();
+        
+        break;
     case IRQ_KEYBOARD + PIC1_OFFSET:
         keyboard_isr();
         break;
@@ -137,4 +150,16 @@ void main_interrupt_handler(struct InterruptFrame frame)
 void activate_keyboard_interrupt(void)
 {
     out(PIC1_DATA, in(PIC1_DATA) & ~(1 << IRQ_KEYBOARD));
+}
+
+void activate_timer_interrupt(void) {
+    __asm__ volatile("cli");
+    // Setup how often PIT fire
+    uint32_t pit_timer_counter_to_fire = PIT_TIMER_COUNTER;
+    out(PIT_COMMAND_REGISTER_PIO, PIT_COMMAND_VALUE);
+    out(PIT_CHANNEL_0_DATA_PIO, (uint8_t) (pit_timer_counter_to_fire & 0xFF));
+    out(PIT_CHANNEL_0_DATA_PIO, (uint8_t) ((pit_timer_counter_to_fire >> 8) & 0xFF));
+
+    // Activate the interrupt
+    out(PIC1_DATA, in(PIC1_DATA) & ~(1 << IRQ_TIMER));
 }
