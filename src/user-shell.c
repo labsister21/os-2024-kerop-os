@@ -976,6 +976,96 @@ void cepe(char *filename, char *dest, uint32_t *dir_stack, uint8_t *dir_stack_in
         return;
     }
 }
+void nano(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index){
+    // cat : Menuliskan sebuah file sebagai text file ke layar (Gunakan format
+    int parseId = 0;
+    // LF newline)
+    if (strcmp("./", filename) == 0)
+    {
+        filename = filename + 2;
+    }
+    if (strcmp("../", filename) == 0)
+    {
+        do
+        {
+            parseId += 1;
+            filename = filename + 3;
+        } while (strcmp("../", filename) == 0);
+        if (*dir_stack_index <= parseId)
+        {
+            syscall_user(6, (uint32_t) "INVALID FILE PATH\n", 18, RED);
+            return;
+        }
+    }
+
+    struct FAT32DriverRequest request = {
+        .parent_cluster_number = dir_stack[*dir_stack_index - (parseId + 1)],
+    };
+    uint8_t i = 0;
+    char realFileName[9] = "\0\0\0\0\0\0\0\0\0";
+    parseId = 0;
+    while (strcmp(".", filename + parseId) != 0 && parseId < 9)
+    {
+        realFileName[parseId] = filename[parseId];
+        parseId += 1;
+    }
+    if (parseId > 8)
+    {
+        syscall_user(6, (uint32_t) "INVALID FILE NAME\n", 18, RED);
+        return;
+    }
+    request.ext[0] = filename[parseId + 1];
+    request.ext[1] = filename[parseId + 2];
+    request.ext[2] = filename[parseId + 3];
+
+    for (; i < 8; i++)
+    {
+        request.name[i] = realFileName[i];
+    }
+    char buff[64];
+    
+    int j = 0;
+    char input = 'a';
+    syscall_user(6, (uint32_t) "Write Text Bellow to File: \n", 28, YELLOW);
+    do
+    {
+        syscall_user(4, (uint32_t)&input, 0, 0);
+        if (!(input == '\b' && j == 0))
+        {
+            syscall_user(5, (uint32_t)&input, GREEN, 0);
+        }
+        if (input != 0 && input != '\n')
+        {
+            if (input == '\b' && j == 0)
+            {
+                // do nothing
+            }
+            else if (input == '\b' && j > 0)
+            {
+                buff[j - 1] = 0;
+                j -= 1;
+            }
+            else
+            {
+                buff[j] = input;
+                j += 1;
+            }
+        }
+    }while(input!='\n');
+    request.buffer_size = j;
+    for (;j<64;j++){
+        buff[j] = 0;
+    }
+    request.buf = buff;
+    int8_t retcode;
+    syscall_user(2,(uint32_t)&request,(uint32_t)&retcode,0);
+    if (retcode != 0)
+    {
+        syscall_user(6, (uint32_t) "FAILED TO WRITE FOLDER\n", 23, RED);
+        return;
+    }
+
+}
 void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
 
 {
@@ -1204,6 +1294,16 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
         else
         {
             syscall_user(6, (uint32_t) "[ERROR]: Usage: rm <filesrcpath> <filesdestpath>\n", 49, RED);
+        }
+    }
+    else if (strcmp("nano",args[0])==0){
+         if (argc == 2)
+        {
+            nano(args[1],dir_stack, dir_stack_index);
+        }
+        else
+        {
+            syscall_user(6, (uint32_t) "[ERROR]: Usage: nano <filepath> \n", 33, RED);
         }
     }
     else
