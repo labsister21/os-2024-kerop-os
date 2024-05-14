@@ -144,13 +144,20 @@ void printInt(int num)
         temp /= 10;
         numDigits++;
     }
-
+    char result[4] = "\0\0\0\0"
     // Convert digits to characters
+    int k = 0;
     for (int i = numDigits - 1; num > 0; i--)
     {
         input = (num % 10) + '0';
-        syscall_user(5, (uint32_t)&input, WHITE, 0);
+        result[k] = input;
+        k += 1;
+        // syscall_user(5, (uint32_t)&input, WHITE, 0);
         num /= 10;
+    }
+    k = 3;
+    for (;k>=0;k--){
+        syscall_user(5, (uint32_t)(result+k), WHITE, 0);
     }
     return;
 }
@@ -1528,7 +1535,20 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
     }
     else if (strcmp("clock", args[0]) == 0)
     {
-        syscall_user(16, 0, 0, 0);
+        uint8_t hour;
+        uint8_t min;
+        uint8_t sec;
+        syscall_user(16, (uint32_t)&hour, (uint32_t)&min, (uint32_t)&sec);
+        char hourc[2] = "\0\0"
+        char minc[2] = "\0\0"
+        char secc[2] = "\0\0"
+        hourc[0] = (hour/10) + '0';
+        hourc[1] = (hour%10) + '0';
+        minc[0] = (min/10) + '0';
+        minc[1] = (min%10) + '0';
+        secc[0] = (sec/10) + '0';
+        secc[1] = (sec%10) + '0';
+        
     }
     else
     {

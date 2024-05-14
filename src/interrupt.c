@@ -145,6 +145,9 @@ void syscall(struct InterruptFrame frame)
         read_CMOS(); // init
         struct clock currTime = get_clock();
         write_CMOS(&currTime);
+        *(int32_t *)frame.cpu.general.edx = currTime.second;
+        *(int32_t *)frame.cpu.general.ecx = currTime.minute;
+        *(int32_t *)frame.cpu.general.ebx = currTime.hour;
         break;
     }
 }

@@ -41,7 +41,7 @@ void framebuffer_clear(void)
     uint16_t i;
     volatile uint16_t *where;
     where = (volatile uint16_t *)FRAMEBUFFER_MEMORY_OFFSET;
-    for (i = 0; i < 80 * 25; i++)
+    for (i = 0; i < 80 * 24; i++)
     {
         *where = space;
         where++;
@@ -57,7 +57,7 @@ void putchar(char* ebx, uint8_t ecx)
     // int offset = c.row * 80 + c.col;
     // if (kata>=0x20 && kata<=0x79){
         if (kata!='\n' && kata!=0){
-            if (newrow > 24){
+            if (newrow > 23){
                 framebuffer_clear();
                 newrow = 0;
                 newcol = 0;
@@ -94,6 +94,16 @@ void puts(char *ebx, uint8_t length, uint8_t textcolor)
         putchar(ebx+i,textcolor);
     }
    
+}
+void putTime(char* hour, char* min, char* sec){
+    framebuffer_write(24, 72, hour[0], 0x0B, 0);
+    framebuffer_write(24, 73, hour[1], 0x0B, 0);
+    framebuffer_write(24, 74, ':', 0x0B, 0);
+    framebuffer_write(24, 75, min[0], 0x0B, 0);
+    framebuffer_write(24, 76, min[1], 0x0B, 0);
+    framebuffer_write(24, 77, ':', 0x0B, 0);
+    framebuffer_write(24, 78, sec[0], 0x0B, 0);
+    framebuffer_write(24, 79, sec[1], 0x0B, 0);
 }
 int offset_framebuffer(int offset)
 {
