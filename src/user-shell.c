@@ -126,26 +126,30 @@ FileInfo dequeue(Queue *queue)
     }
     return item;
 }
-void printInt(int num) {
+void printInt(int num)
+{
     // Check if num is 0
-    char input='0';
-    if (num == 0) {
-        syscall_user(5,(uint32_t)&input,WHITE,0);
+    char input = '0';
+    if (num == 0)
+    {
+        syscall_user(5, (uint32_t)&input, WHITE, 0);
         return;
     }
 
     // Calculate the number of digits
     int temp = num;
     int numDigits = 0;
-    while (temp > 0) {
+    while (temp > 0)
+    {
         temp /= 10;
         numDigits++;
     }
 
     // Convert digits to characters
-    for (int i = numDigits - 1; num>0 ; i--) {
-        input =  (num % 10) + '0';
-        syscall_user(5,(uint32_t)&input,WHITE,0);
+    for (int i = numDigits - 1; num > 0; i--)
+    {
+        input = (num % 10) + '0';
+        syscall_user(5, (uint32_t)&input, WHITE, 0);
         num /= 10;
     }
     return;
@@ -154,7 +158,6 @@ int isEmpty(Queue *queue)
 {
     return (queue->front == -1);
 }
-
 
 char *custom_strchr(const char *str, int c)
 {
@@ -398,8 +401,28 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
         .ext = "\0\0\0",
         .buffer_size = 0,
     };
+    uint8_t parseId = 0;
+    uint8_t charcount = 0;
+    if (strcmp("../", dirname) == 0)
+    {
+        do
+        {
+            parseId++;
+            dirname += 3;
+            charcount += 3;
 
-    if (strcmp(dirname, "..") == 0)
+        } while (strcmp("../", dirname) == 0);
+
+        if ((*dir_stack_index) - parseId <= 0)
+        {
+            (*dir_stack_index) = 1;
+        }
+        else
+        {
+            ((*dir_stack_index) -= parseId);
+        }
+    }
+    else if (strcmp("..", dirname) == 0)
     {
         if (*dir_stack_index <= 1)
         {
@@ -410,47 +433,46 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
             (*dir_stack_index)--;
         }
     }
+
     else if (strcmp(dirname, ".") == 0)
     {
         return;
     }
-    else
+
+    for (int i = 0; i < 8; i++)
     {
-        for (int i = 0; i < 8; i++)
-        {
-            request.name[i] = dirname[i];
-        }
+        request.name[i] = dirname[i + charcount];
+    }
 
-        int8_t retcode;
-        syscall_user(1, (uint32_t)&request, (uint32_t)&retcode, 0);
-        syscall_user(10, (uint32_t)&req_table, dir_stack[*dir_stack_index - 1], 0);
+    int8_t retcode;
+    syscall_user(1, (uint32_t)&request, (uint32_t)&retcode, 0);
+    syscall_user(10, (uint32_t)&req_table, dir_stack[*dir_stack_index - 1], 0);
 
-        if (retcode != 0)
-        {
-            char err[18] = "INVALID DIRECTORY\n";
-            syscall_user(6, (uint32_t)err, 18, RED);
-            return;
-        }
-        for (uint8_t j = 0; j < 8; j++)
-        {
-            dir_name_stack[*dir_stack_index][j] = dirname[j];
-        }
-        for (uint32_t i = 1; i < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry); i++)
-        {
-            if (strcmp(req_table.table[i].name, request.name) == 0)
+    if (retcode != 0)
+    {
+        char err[18] = "INVALID DIRECTORY\n";
+        syscall_user(6, (uint32_t)err, 18, RED);
+        return;
+    }
+    for (uint8_t j = 0; j < 8; j++)
+    {
+        dir_name_stack[*dir_stack_index][j] = dirname[j];
+    }
+    for (uint32_t i = 1; i < CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry); i++)
+    {
+        if (strcmp(req_table.table[i].name, request.name) == 0)
 
+        {
+            if (req_table.table[i].attribute == ATTR_SUBDIRECTORY && req_table.table[i].filesize == 0)
             {
-                if (req_table.table[i].attribute == ATTR_SUBDIRECTORY && req_table.table[i].filesize == 0)
-                {
 
-                    dir_stack[*dir_stack_index] = (req_table.table[i].cluster_high << 16) | req_table.table[i].cluster_low;
-                    (*dir_stack_index)++;
-                    return;
-                }
+                dir_stack[*dir_stack_index] = (req_table.table[i].cluster_high << 16) | req_table.table[i].cluster_low;
+                (*dir_stack_index)++;
+                return;
             }
         }
-        syscall_user(6, (uint32_t) "[ERROR] FILE NOT FOUND\n", 23, RED);
     }
+    syscall_user(6, (uint32_t) "[ERROR] FILE NOT FOUND\n", 23, RED);
 }
 void bfs_find(char *target_name)
 {
@@ -653,8 +675,9 @@ void ket(char *Filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
             if (retcode == 0)
             {
                 uint32_t clustnum = 0;
-                for (;clustnum<request2.buffer_size;clustnum++){
-                    syscall_user(5, (uint32_t)fileBuff.buf+clustnum, WHITE, 0);
+                for (; clustnum < request2.buffer_size; clustnum++)
+                {
+                    syscall_user(5, (uint32_t)fileBuff.buf + clustnum, WHITE, 0);
                     // syscall_user(6, (uint32_t)fileBuff.buf, request2.buffer_size, WHITE);
                 }
                 syscall_user(6, (uint32_t) "\n", 1, WHITE);
@@ -1006,7 +1029,8 @@ void cepe(char *filename, char *dest, uint32_t *dir_stack, uint8_t *dir_stack_in
         return;
     }
 }
-void nano(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index){
+void nano(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index)
+{
     // cat : Menuliskan sebuah file sebagai text file ke layar (Gunakan format
     int parseId = 0;
     // LF newline)
@@ -1053,7 +1077,7 @@ void nano(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index){
         request.name[i] = realFileName[i];
     }
     char buff[CLUSTER_SIZE];
-    
+
     int j = 0;
     char input = 'a';
     syscall_user(6, (uint32_t) "Write Text Bellow to File: \n", 28, YELLOW);
@@ -1081,20 +1105,20 @@ void nano(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index){
                 j += 1;
             }
         }
-    }while(input!='\n');
+    } while (input != '\n');
     request.buffer_size = j;
     request.buf = buff;
     int8_t retcode;
-    syscall_user(2,(uint32_t)&request,(uint32_t)&retcode,0);
+    syscall_user(2, (uint32_t)&request, (uint32_t)&retcode, 0);
     if (retcode != 0)
     {
         syscall_user(6, (uint32_t) "FAILED TO WRITE FOLDER\n", 23, RED);
         return;
     }
-
 }
-void eksek(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8]){
-     int parseId = 0;
+void eksek(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
+{
+    int parseId = 0;
     int8_t retcode;
     // LF newline)
     if (strcmp("./", filename) == 0)
@@ -1124,7 +1148,7 @@ void eksek(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (
     struct FAT32DirectoryTable curr_dir;
     struct FAT32DriverRequest requestcurr = {
         .buf = &curr_dir,
-        .parent_cluster_number = dir_stack[*dir_stack_index - (destParseId+1)],
+        .parent_cluster_number = dir_stack[*dir_stack_index - (destParseId + 1)],
         .ext = "\0\0\0",
         .buffer_size = 0,
 
@@ -1132,7 +1156,7 @@ void eksek(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (
     uint8_t i = 0;
     for (; i < 8; i++)
     {
-        requestcurr.name[i] = dir_name_stack[*dir_stack_index - (destParseId+1)][i];
+        requestcurr.name[i] = dir_name_stack[*dir_stack_index - (destParseId + 1)][i];
     }
     syscall_user(1, (uint32_t)&requestcurr, (uint32_t)&retcode, 0);
     syscall_user(10, (uint32_t)&curr_dir, dir_stack[*dir_stack_index - (destParseId+1)], 0);
@@ -1145,7 +1169,7 @@ void eksek(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (
     
     uint32_t filesize;
     struct FAT32DriverRequest request = {
-        .parent_cluster_number = dir_stack[*dir_stack_index - (destParseId+1)],
+        .parent_cluster_number = dir_stack[*dir_stack_index - (destParseId + 1)],
         .ext = "\0\0\0",
     };
     char realFileName[9] = "\0\0\0\0\0\0\0\0\0";
@@ -1196,30 +1220,36 @@ void eksek(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (
     
 }
 
-void pees(){
+void pees()
+{
     struct ProcessControlBlock pcb;
-    
-    syscall_user(15,(uint32_t)&pcb,0,0);
+
+    syscall_user(15, (uint32_t)&pcb, 0, 0);
     syscall_user(6, (uint32_t) "PROCESS INFO: \n", 15, BLUE);
     syscall_user(6, (uint32_t) "ID: ", 4, GREEN);
     printInt(pcb.metadata.pid);
-    syscall_user(5,(uint32_t)&"\n",GREEN,0);
+    syscall_user(5, (uint32_t) & "\n", GREEN, 0);
     syscall_user(6, (uint32_t) "NAME: ", 7, GREEN);
     uint8_t i = 0;
-    for (;i<PROCESS_NAME_LENGTH_MAX && pcb.metadata.name[i]!=0;i++){
-        syscall_user(5, (uint32_t)pcb.metadata.name + i, WHITE,0);    
+    for (; i < PROCESS_NAME_LENGTH_MAX && pcb.metadata.name[i] != 0; i++)
+    {
+        syscall_user(5, (uint32_t)pcb.metadata.name + i, WHITE, 0);
     }
-    syscall_user(5, (uint32_t)"\n", WHITE,0);    
+    syscall_user(5, (uint32_t) "\n", WHITE, 0);
     syscall_user(6, (uint32_t) "STATUS: ", 8, WHITE);
-    if (pcb.metadata.state==0){
+    if (pcb.metadata.state == 0)
+    {
         syscall_user(6, (uint32_t) "READY ", 6, YELLOW);
-    }else if (pcb.metadata.state==1){
-        syscall_user(6, (uint32_t) "RUNNING ", 8, GREEN);
-    }else if (pcb.metadata.state==2){
-        syscall_user(6, (uint32_t) "BLOCKED ", 8, RED);
-
     }
-    syscall_user(5,(uint32_t)&"\n",WHITE,0);
+    else if (pcb.metadata.state == 1)
+    {
+        syscall_user(6, (uint32_t) "RUNNING ", 8, GREEN);
+    }
+    else if (pcb.metadata.state == 2)
+    {
+        syscall_user(6, (uint32_t) "BLOCKED ", 8, RED);
+    }
+    syscall_user(5, (uint32_t) & "\n", WHITE, 0);
 }
 void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
 
@@ -1340,7 +1370,8 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
                     syscall_user(5, (uint32_t) "e", LIGHT_PURPLE, 0);
                     syscall_user(5, (uint32_t) "a", LIGHT_PURPLE, 0);
                     syscall_user(5, (uint32_t) "r", LIGHT_PURPLE, 0);
-                }else if (buff[0] == 'n' && buff[1] == 'a' && buff[2] == 'n' && buff[3] == 'o' && buff[4] == ' ')
+                }
+                else if (buff[0] == 'n' && buff[1] == 'a' && buff[2] == 'n' && buff[3] == 'o' && buff[4] == ' ')
                 {
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
@@ -1463,10 +1494,11 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
             syscall_user(6, (uint32_t) "[ERROR]: Usage: rm <filesrcpath> <filesdestpath>\n", 49, RED);
         }
     }
-    else if (strcmp("nano",args[0])==0){
-         if (argc == 2)
+    else if (strcmp("nano", args[0]) == 0)
+    {
+        if (argc == 2)
         {
-            nano(args[1],dir_stack, dir_stack_index);
+            nano(args[1], dir_stack, dir_stack_index);
         }
         else
         {
@@ -1480,10 +1512,14 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
         {
             syscall_user(6, (uint32_t) "[ERROR]: Usage: ./<filepath>\n", 32, RED);
         }
-    }else if (strcmp("ps",args[0])==0){
-        if (argc==1){
+    }
+    else if (strcmp("ps", args[0]) == 0)
+    {
+        if (argc == 1)
+        {
             pees();
-        }else
+        }
+        else
         {
             syscall_user(6, (uint32_t) "[ERROR]: Usage: ps\n", 20, RED);
         }
