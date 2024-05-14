@@ -216,22 +216,6 @@ int atoi(const char *str)
     return result * sign;
 }
 
-int strcmp(char *s1, char *s2)
-{
-    int i = 0;
-
-    do
-    {
-        if (s1[i] != s2[i])
-        {
-            return s1[i] - s2[i];
-        }
-        i++;
-    } while (s1[i] != '\0');
-
-    return 0;
-}
-
 void mkdir_command(char *dirname, uint32_t parent_cluster_number)
 {
 
@@ -1226,8 +1210,7 @@ void pees()
     //         }
     //         syscall_user(5, (uint32_t) & "\n", WHITE, 0);
     //     }
-    // }   
-    
+    // }
 }
 void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
 
@@ -1505,11 +1488,15 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
             syscall_user(6, (uint32_t) "[ERROR]: Usage: ps\n", 20, RED);
         }
     }
+
+    else if (strcmp("kill", args[0]) == 0)
+    {
+        syscall_user(21, (uint32_t)args[1], 0, 0);
+    }
     else if (strcmp("clock", args[0]) == 0)
     {
 
-        syscall_user(16, 0,0,0);
-        
+        syscall_user(16, 0, 0, 0);
     }
     else
     {

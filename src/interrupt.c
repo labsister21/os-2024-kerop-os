@@ -7,6 +7,7 @@
 #include "header/process/process.h"
 #include "header/scheduler/scheduler.h"
 #include "header/driver/cmos_driver.h"
+#include "header/stdlib/string.h"
 
 #define MAX_DIR_STACK_SIZE 16
 #define BLACK 0x00
@@ -35,7 +36,7 @@ void printInt(int num)
     char input = '0';
     if (num == 0)
     {
-        putchar((char *) &input, WHITE);
+        putchar((char *)&input, WHITE);
         return;
     }
 
@@ -59,8 +60,9 @@ void printInt(int num)
         num /= 10;
     }
     k = 3;
-    for (;k>=0;k--){
-        putchar((char *)(result+k), WHITE);
+    for (; k >= 0; k--)
+    {
+        putchar((char *)(result + k), WHITE);
     }
     return;
 }
@@ -179,14 +181,13 @@ void syscall(struct InterruptFrame frame)
         break;
 
     case 14:;
-        struct ProcessControlBlock pcb = *(struct ProcessControlBlock *)process_get_current_running_pcb_pointer();
-        *((int8_t *)frame.cpu.general.ecx) = process_destroy((uint32_t)pcb.metadata.pid);
+        *((int8_t *)frame.cpu.general.ecx) = process_destroy((uint32_t)frame.cpu.general.ebx);
         break;
     case 15:
         *(struct ProcessControlBlock *)frame.cpu.general.ebx = *(struct ProcessControlBlock *)process_get_current_running_pcb_pointer();
         break;
-    case 16:
-        ;struct FAT32DriverRequest clockreq = {
+    case 16:;
+        struct FAT32DriverRequest clockreq = {
             .buf = (uint8_t *)0,
             .name = "clock",
             .ext = "\0\0\0",
@@ -205,7 +206,7 @@ void syscall(struct InterruptFrame frame)
         *(uint8_t *)frame.cpu.general.ebx = currTime.hour;
         break;
     case 19:
-        putTime((char*)frame.cpu.general.ebx,(char*)frame.cpu.general.ecx,(char*)frame.cpu.general.edx);
+        putTime((char *)frame.cpu.general.ebx, (char *)frame.cpu.general.ecx, (char *)frame.cpu.general.edx, ':');
         break;
     case 20:
         // ;uint8_t i = 0;
@@ -214,42 +215,78 @@ void syscall(struct InterruptFrame frame)
         //     if (process_manager_state.list_of_process[i]){
         //         maxPid = i;
         //     }
-        // }   
+        // }
         // (struct ProcessControlBlock *)frame.cpu.general.ebx = (struct ProcessControlBlock *) _process_list;
-        
-        for (int j =0 ;j<16;j++){
-        if (process_manager_state.list_of_process[j]){
-            puts((char *)"PROCESS INFO: \n", 15, BLUE);
-            puts((char *) "ID: ", 4, GREEN);
-            printInt(_process_list[j].metadata.pid);
-            putchar((char *)"\n", GREEN);
-            puts((char *)"NAME: ", 7, GREEN);
-            uint8_t i = 0;
-            for (; i < PROCESS_NAME_LENGTH_MAX && _process_list[j].metadata.name[i] != 0; i++)
+
+        for (int j = 0; j < 16; j++)
+        {
+            if (process_manager_state.list_of_process[j])
             {
-                putchar((char *)_process_list[j].metadata.name + i, WHITE);
+                puts((char *)"PROCESS INFO: \n", 15, BLUE);
+                puts((char *)"ID: ", 4, GREEN);
+                printInt(_process_list[j].metadata.pid);
+                putchar((char *)"\n", GREEN);
+                puts((char *)"NAME: ", 7, GREEN);
+                uint8_t i = 0;
+                for (; i < PROCESS_NAME_LENGTH_MAX && _process_list[j].metadata.name[i] != 0; i++)
+                {
+                    putchar((char *)_process_list[j].metadata.name + i, WHITE);
+                }
+                putchar((char *)"\n", WHITE);
+                puts((char *)"STATUS: ", 8, WHITE);
+                if (_process_list[j].metadata.state == 0)
+                {
+                    puts((char *)"READY ", 6, YELLOW);
+                }
+                else if (_process_list[j].metadata.state == 1)
+                {
+                    puts((char *)"RUNNING ", 8, GREEN);
+                }
+                else if (_process_list[j].metadata.state == 2)
+                {
+                    puts((char *)"BLOCKED ", 8, RED);
+                }
+                putchar((char *)"\n", WHITE);
             }
-            putchar((char *) "\n", WHITE);
-            puts((char *)"STATUS: ", 8, WHITE);
-            if (_process_list[j].metadata.state == 0)
-            {
-                puts( (char *)"READY ", 6, YELLOW);
-            }
-            else if (_process_list[j].metadata.state == 1)
-            {
-                puts( (char *)"RUNNING ", 8, GREEN);
-            }
-            else if (_process_list[j].metadata.state == 2)
-            {
-                puts((char *)"BLOCKED ", 8, RED);
-            }
-            putchar((char *)"\n", WHITE);
         }
-    }   
         break;
+    case 21:
 
+        struct ProcessControlBlock pcb;
+        int8_t is_clock;
+        int8_t retcode;
+        char *arg = (char *)frame.cpu.general.ebx;
+
+        int8_t piddd = 0;
+        if (arg[1] != '\0')
+        {
+            piddd += (arg[0] - '0') * 10;
+            piddd += arg[1] - '0';
+        }
+        else
+        {
+            piddd += (arg[0] - '0');
+        }
+
+        pcb = _process_list[piddd];
+        if (strcmp(pcb.metadata.name, "clock") == 0)
+        {
+            is_clock = 1;
+        }
+        retcode = process_destroy(piddd);
+        if (retcode)
+        {
+            puts((char *)"Proses Berhasil dihapus!\n", 25, GREEN);
+            if (is_clock)
+            {
+                putTime((char *)"  ", (char *)"  ", (char *)"  ", ' ');
+            }
+        }
+        else
+        {
+            puts((char *)"Proses Tidak Berhasil dihapus!\n", 31, GREEN);
+        }
     }
-
 }
 
 void main_interrupt_handler(struct InterruptFrame frame)
