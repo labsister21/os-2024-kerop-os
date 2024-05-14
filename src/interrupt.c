@@ -125,7 +125,7 @@ void main_interrupt_handler(struct InterruptFrame frame)
     switch (frame.int_number)
     {
     case(PIC1_OFFSET + IRQ_TIMER):
-        struct PageDirectory *current = paging_get_current_page_directory_addr();
+        ;struct PageDirectory *current = paging_get_current_page_directory_addr();
         struct Context ctx = {
             .cpu = frame.cpu,
             .eflags = frame.int_stack.eflags,
