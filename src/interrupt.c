@@ -130,7 +130,7 @@ void syscall(struct InterruptFrame frame)
         *(struct ProcessControlBlock *)frame.cpu.general.ebx = *(struct ProcessControlBlock *)process_get_current_running_pcb_pointer();
         break;
     case 16:
-        struct FAT32DriverRequest clockreq = {
+        ;struct FAT32DriverRequest clockreq = {
             .buf = (uint8_t *)0,
             .name = "clock",
             .ext = "\0\0\0",
@@ -145,10 +145,12 @@ void syscall(struct InterruptFrame frame)
         read_CMOS(); // init
         struct clock currTime = get_clock();
         write_CMOS(&currTime);
-        *(int32_t *)frame.cpu.general.edx = currTime.second;
-        *(int32_t *)frame.cpu.general.ecx = currTime.minute;
-        *(int32_t *)frame.cpu.general.ebx = currTime.hour;
+        *(uint8_t *)frame.cpu.general.edx = currTime.second;
+        *(uint8_t *)frame.cpu.general.ecx = currTime.minute;
+        *(uint8_t *)frame.cpu.general.ebx = currTime.hour;
         break;
+    case 19:
+        putTime((char*)frame.cpu.general.ebx,(char*)frame.cpu.general.ecx,(char*)frame.cpu.general.edx);
     }
 }
 

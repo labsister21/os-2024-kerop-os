@@ -52,4 +52,5 @@ void puts(char *ebx, uint8_t length, uint8_t textcolor);
 void putchar(char* ebx, uint8_t ecx);
 struct Cursor framebuffer_get_cursor();
 int offset_framebuffer(int offset);
+void putTime(char* hour, char* min, char* sec);
 #endif

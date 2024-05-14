@@ -22,12 +22,22 @@ int main(void)
     int8_t flag;
     while (true)
     {
+        uint8_t hour;
+        uint8_t min;
+        uint8_t sec;
         syscall_user(17, (uint32_t)&flag, 0, 0);
-        char hour[2];
-        char minute[2];
-        char seconds[2];
-        syscall_user(18, (uint32_t)&seconds, (uint32_t)&minute, (uint32_t)&hour);
-        syscall_user(6, (uint32_t)seconds, 2, 0x0F);
+        syscall_user(18, (uint32_t)&sec, (uint32_t)&min, (uint32_t)&hour);
+        char hourc[2] = "\0\0";
+        char minc[2] = "\0\0";
+        char secc[2] = "\0\0";
+        hourc[0] = (hour/10) + '0';
+        hourc[1] = (hour%10) + '0';
+        minc[0] = (min/10) + '0';
+        minc[1] = (min%10) + '0';
+        secc[0] = (sec/10) + '0';
+        secc[1] = (sec%10) + '0';
+        syscall_user(19,(uint32_t)hourc,(uint32_t)minc,(uint32_t)secc);
+        // syscall_user(6, (uint32_t)seconds, 2, 0x0F);
     }
     // syscall_user(6, (uint32_t) "Ini clock", 9, 0x0C);
 
