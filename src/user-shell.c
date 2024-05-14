@@ -690,6 +690,7 @@ void ket(char *Filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
             }
         }
     }
+    syscall_user(6, (uint32_t) "FILE NOT FOUND\n", 15, RED);
 }
 void emvi(char *filename, char *dest, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
 {
@@ -1158,13 +1159,14 @@ void eksek(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (
         requestcurr.name[i] = dir_name_stack[*dir_stack_index - (destParseId + 1)][i];
     }
     syscall_user(1, (uint32_t)&requestcurr, (uint32_t)&retcode, 0);
-    syscall_user(10, (uint32_t)&curr_dir, dir_stack[*dir_stack_index - 1], 0);
+    syscall_user(10, (uint32_t)&curr_dir, dir_stack[*dir_stack_index - (destParseId+1)], 0);
     if (retcode != 0)
     {
         syscall_user(6, (uint32_t) "FAILED TO READ DSTFOLDER\n", 25, RED);
         return;
     }
     // read source file size
+    
     uint32_t filesize;
     struct FAT32DriverRequest request = {
         .parent_cluster_number = dir_stack[*dir_stack_index - (destParseId + 1)],
@@ -1204,16 +1206,18 @@ void eksek(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (
             // cluster_high= curr_dir.table[i].cluster_high;
             // cluster_low = curr_dir.table[i].cluster_low ;
             filesize = curr_dir.table[i].filesize;
+            request.buf =(uint8_t *)0;
+            request.buffer_size = filesize;
+            syscall_user(15, (uint32_t)&request, (uint32_t)&retcode, 0);
+            if (retcode != 0)
+            {
+                syscall_user(6, (uint32_t) "FAILED TO EXEC SRCFILE\n", 23, RED);
+                return;
+            }
         }
     }
-    request.buf = (uint8_t *)0;
-    request.buffer_size = filesize;
-    syscall_user(15, (uint32_t)&request, (uint32_t)&retcode, 0);
-    if (retcode != 0)
-    {
-        syscall_user(6, (uint32_t) "FAILED TO EXEC SRCFILE\n", 23, RED);
-        return;
-    }
+    syscall_user(6, (uint32_t) "FILE NOT FOUND\n", 15, RED);
+    
 }
 
 void pees()
@@ -1501,15 +1505,12 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
             syscall_user(6, (uint32_t) "[ERROR]: Usage: nano <filepath> \n", 33, RED);
         }
     }
-    else if (strcmp("exec", args[0]) == 0)
-    {
-        if (argc == 2)
+    else if (strcmp("./",args[0])==0 || strcmp("../",args[0])==0){
+        if (argc==1){
+            eksek(args[0],dir_stack, dir_stack_index,dir_name_stack);
+        }else
         {
-            eksek(args[1], dir_stack, dir_stack_index, dir_name_stack);
-        }
-        else
-        {
-            syscall_user(6, (uint32_t) "[ERROR]: Usage: exec <filepath>\n", 32, RED);
+            syscall_user(6, (uint32_t) "[ERROR]: Usage: ./<filepath>\n", 32, RED);
         }
     }
     else if (strcmp("ps", args[0]) == 0)
