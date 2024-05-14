@@ -83,61 +83,67 @@ void syscall(struct InterruptFrame frame)
             *(struct FAT32DriverRequest *)frame.cpu.general.ebx);
         break;
     case 4:
-        get_keyboard_buffer((char *)frame.cpu.general.ebx + (int) frame.cpu.general.ecx);
+        get_keyboard_buffer((char *)frame.cpu.general.ebx + (int)frame.cpu.general.ecx);
         break;
     case 5:
         putchar((char *)frame.cpu.general.ebx, frame.cpu.general.ecx);
         break;
     case 6:
         puts(
-            (char *) frame.cpu.general.ebx,
+            (char *)frame.cpu.general.ebx,
             frame.cpu.general.ecx,
             frame.cpu.general.edx);
         break;
     case 7:
         keyboard_state_activate();
         break;
-    
+
     case 8:
         keyboard_state_deactivate();
         break;
     case 9:
         framebuffer_clear();
-        framebuffer_set_cursor(0,0);
+        framebuffer_set_cursor(0, 0);
         break;
     case 10:
-        read_clusters((struct FAT32DirectoryTable*) frame.cpu.general.ebx,(uint32_t)frame.cpu.general.ecx,1);
+        read_clusters((struct FAT32DirectoryTable *)frame.cpu.general.ebx, (uint32_t)frame.cpu.general.ecx, 1);
         break;
-    
+
     case 11:
-        write_clusters((struct FAT32DirectoryTable*) frame.cpu.general.ebx,(uint32_t)frame.cpu.general.ecx,1);
+        write_clusters((struct FAT32DirectoryTable *)frame.cpu.general.ebx, (uint32_t)frame.cpu.general.ecx, 1);
         break;
     case 12:
-         *((int8_t *)frame.cpu.general.ecx) = delete(
+        *((int8_t *)frame.cpu.general.ecx) = delete (
             *(struct FAT32DriverRequest *)frame.cpu.general.ebx);
         break;
     case 13:
-        *((int8_t *)frame.cpu.general.ecx) = 
-            process_create_user_process(*(struct FAT32DriverRequest*) frame.cpu.general.ebx);
+        *((int8_t *)frame.cpu.general.ecx) =
+            process_create_user_process(*(struct FAT32DriverRequest *)frame.cpu.general.ebx);
         break;
 
-    case 14: 
-        ;struct ProcessControlBlock pcb = *(struct ProcessControlBlock*) process_get_current_running_pcb_pointer();
-            *((int8_t *) frame.cpu.general.ecx) = process_destroy((uint32_t) pcb.metadata.pid);
+    case 14:;
+        struct ProcessControlBlock pcb = *(struct ProcessControlBlock *)process_get_current_running_pcb_pointer();
+        *((int8_t *)frame.cpu.general.ecx) = process_destroy((uint32_t)pcb.metadata.pid);
         break;
     case 15:
-        *(struct ProcessControlBlock*) frame.cpu.general.ebx =  *(struct ProcessControlBlock*) process_get_current_running_pcb_pointer();
+        *(struct ProcessControlBlock *)frame.cpu.general.ebx = *(struct ProcessControlBlock *)process_get_current_running_pcb_pointer();
+        break;
+    case 16:
+        read_CMOS();
+        struct clock currTime = get_clock();
+        *(uint8_t *)frame.cpu.general.ebx = currTime.second;
+        *(uint8_t *)frame.cpu.general.ecx = currTime.minute;
+        *(uint8_t *)frame.cpu.general.edx = currTime.hour;
         break;
     }
-
 }
 
 void main_interrupt_handler(struct InterruptFrame frame)
 {
     switch (frame.int_number)
     {
-    case(PIC1_OFFSET + IRQ_TIMER):
-        ;struct PageDirectory *current = paging_get_current_page_directory_addr();
+    case (PIC1_OFFSET + IRQ_TIMER):;
+        struct PageDirectory *current = paging_get_current_page_directory_addr();
         struct Context ctx = {
             .cpu = frame.cpu,
             .eflags = frame.int_stack.eflags,
@@ -147,9 +153,9 @@ void main_interrupt_handler(struct InterruptFrame frame)
         scheduler_save_context_to_current_running_pcb(ctx);
 
         pic_ack(IRQ_TIMER);
-        
+
         scheduler_switch_to_next_process();
-        
+
         break;
     case IRQ_KEYBOARD + PIC1_OFFSET:
         keyboard_isr();
@@ -165,13 +171,14 @@ void activate_keyboard_interrupt(void)
     out(PIC1_DATA, in(PIC1_DATA) & ~(1 << IRQ_KEYBOARD));
 }
 
-void activate_timer_interrupt(void) {
+void activate_timer_interrupt(void)
+{
     __asm__ volatile("cli");
     // Setup how often PIT fire
     uint32_t pit_timer_counter_to_fire = PIT_TIMER_COUNTER;
     out(PIT_COMMAND_REGISTER_PIO, PIT_COMMAND_VALUE);
-    out(PIT_CHANNEL_0_DATA_PIO, (uint8_t) (pit_timer_counter_to_fire & 0xFF));
-    out(PIT_CHANNEL_0_DATA_PIO, (uint8_t) ((pit_timer_counter_to_fire >> 8) & 0xFF));
+    out(PIT_CHANNEL_0_DATA_PIO, (uint8_t)(pit_timer_counter_to_fire & 0xFF));
+    out(PIT_CHANNEL_0_DATA_PIO, (uint8_t)((pit_timer_counter_to_fire >> 8) & 0xFF));
 
     // Activate the interrupt
     out(PIC1_DATA, in(PIC1_DATA) & ~(1 << IRQ_TIMER));
