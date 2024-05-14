@@ -26,7 +26,8 @@ int main(void)
         uint8_t min;
         uint8_t sec;
         syscall_user(17, (uint32_t)&flag, 0, 0);
-        syscall_user(18, (uint32_t)&sec, (uint32_t)&min, (uint32_t)&hour);
+        syscall_user(18, (uint32_t)&hour, (uint32_t)&min, (uint32_t)&sec);
+        hour = (hour+7)%24;
         char hourc[2] = "\0\0";
         char minc[2] = "\0\0";
         char secc[2] = "\0\0";
