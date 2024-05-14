@@ -57,7 +57,7 @@ void putchar(char* ebx, uint8_t ecx)
     // int offset = c.row * 80 + c.col;
     // if (kata>=0x20 && kata<=0x79){
         if (kata!='\n' && kata!=0){
-            if (newrow > 25){
+            if (newrow > 24){
                 framebuffer_clear();
                 newrow = 0;
                 newcol = 0;
@@ -66,11 +66,8 @@ void putchar(char* ebx, uint8_t ecx)
                 framebuffer_write(c.row, c.col, kata, ecx, 0);
                 newcol += 1;
             }else{
-                if (newcol > 12){
                     newcol -= 1;
                     framebuffer_write(c.row, newcol, 0, ecx, 0);
-                }
-                
             }
             
         }else{
