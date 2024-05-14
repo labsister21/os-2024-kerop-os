@@ -4,6 +4,7 @@
 #include "header/stdlib/string.h"
 #include "header/driver/disk.h"
 #include "header/driver/keyboard.h"
+#include "header/process/process.h"
 
 #define MAX_DIR_STACK_SIZE 16
 #define BLACK 0x00
@@ -25,6 +26,16 @@
 #define MAX_INPUT_BUFFER 63
 #define MAX_ARGS 0x3
 #define MAX_QUEUE_SIZE 20
+void syscall_user(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx)
+{
+    __asm__ volatile("mov %0, %%ebx" : /* <Empty> */ : "r"(ebx));
+    __asm__ volatile("mov %0, %%ecx" : /* <Empty> */ : "r"(ecx));
+    __asm__ volatile("mov %0, %%edx" : /* <Empty> */ : "r"(edx));
+    __asm__ volatile("mov %0, %%eax" : /* <Empty> */ : "r"(eax));
+    // Note : gcc usually use %eax as intermediate register,
+    //        so it need to be the last one to mov
+    __asm__ volatile("int $0x30");
+}
 typedef struct
 {
     char filename[9];
@@ -115,22 +126,36 @@ FileInfo dequeue(Queue *queue)
     }
     return item;
 }
+void printInt(int num) {
+    // Check if num is 0
+    char input='0';
+    if (num == 0) {
+        syscall_user(5,(uint32_t)&input,WHITE,0);
+        return;
+    }
 
+    // Calculate the number of digits
+    int temp = num;
+    int numDigits = 0;
+    while (temp > 0) {
+        temp /= 10;
+        numDigits++;
+    }
+
+    // Convert digits to characters
+    for (int i = numDigits - 1; num>0 ; i--) {
+        input =  (num % 10) + '0';
+        syscall_user(5,(uint32_t)&input,WHITE,0);
+        num /= 10;
+    }
+    return;
+}
 int isEmpty(Queue *queue)
 {
     return (queue->front == -1);
 }
 
-void syscall_user(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx)
-{
-    __asm__ volatile("mov %0, %%ebx" : /* <Empty> */ : "r"(ebx));
-    __asm__ volatile("mov %0, %%ecx" : /* <Empty> */ : "r"(ecx));
-    __asm__ volatile("mov %0, %%edx" : /* <Empty> */ : "r"(edx));
-    __asm__ volatile("mov %0, %%eax" : /* <Empty> */ : "r"(eax));
-    // Note : gcc usually use %eax as intermediate register,
-    //        so it need to be the last one to mov
-    __asm__ volatile("int $0x30");
-}
+
 char *custom_strchr(const char *str, int c)
 {
     while (*str != '\0')
@@ -1013,11 +1038,11 @@ void nano(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index){
         realFileName[parseId] = filename[parseId];
         parseId += 1;
     }
-    if (parseId > 8)
-    {
-        syscall_user(6, (uint32_t) "INVALID FILE NAME\n", 18, RED);
-        return;
-    }
+    // if (parseId > 8)
+    // {
+    //     syscall_user(6, (uint32_t) "INVALID FILE NAME\n", 18, RED);
+    //     return;
+    // }
     request.ext[0] = filename[parseId + 1];
     request.ext[1] = filename[parseId + 2];
     request.ext[2] = filename[parseId + 3];
@@ -1066,6 +1091,131 @@ void nano(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index){
         return;
     }
 
+}
+void eksek(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8]){
+     int parseId = 0;
+    int8_t retcode;
+    // LF newline)
+    if (strcmp("./", filename) == 0)
+    {
+        filename = filename + 2;
+    }
+
+    if (strcmp("../", filename) == 0)
+    {
+        do
+        {
+            parseId += 1;
+            filename = filename + 3;
+        } while (strcmp("../", filename) == 0);
+        if (*dir_stack_index <= parseId)
+        {
+            syscall_user(6, (uint32_t) "INVALID DESTINATION PATH\n", 18, RED);
+            return;
+        }
+    }
+    int destParseId = parseId;
+    // uint8_t attribute;
+    // uint8_t user_attribute;
+    // uint16_t cluster_high;
+    // uint16_t cluster_low;
+    // read current directory
+    struct FAT32DirectoryTable curr_dir;
+    struct FAT32DriverRequest requestcurr = {
+        .buf = &curr_dir,
+        .parent_cluster_number = dir_stack[*dir_stack_index - (destParseId+1)],
+        .ext = "\0\0\0",
+        .buffer_size = 0,
+
+    };
+    uint8_t i = 0;
+    for (; i < 8; i++)
+    {
+        requestcurr.name[i] = dir_name_stack[*dir_stack_index - (destParseId+1)][i];
+    }
+    syscall_user(1, (uint32_t)&requestcurr, (uint32_t)&retcode, 0);
+    syscall_user(10, (uint32_t)&curr_dir, dir_stack[*dir_stack_index - 1], 0);
+    if (retcode != 0)
+    {
+        syscall_user(6, (uint32_t) "FAILED TO READ DSTFOLDER\n", 25, RED);
+        return;
+    }
+    // read source file size
+    uint32_t filesize;
+    struct FAT32DriverRequest request = {
+        .parent_cluster_number = dir_stack[*dir_stack_index - (destParseId+1)],
+        .ext = "\0\0\0",
+    };
+    char realFileName[9] = "\0\0\0\0\0\0\0\0\0";
+    parseId = 0;
+    while (strcmp(".", filename + parseId) != 0 && parseId < 9)
+    {
+        realFileName[parseId] = filename[parseId];
+        parseId += 1;
+    }
+
+    if (parseId > 8)
+    {
+        syscall_user(6, (uint32_t) "INVALID FILE NAME\n", 18, RED);
+        return;
+    }
+
+    request.ext[0] = filename[parseId + 1];
+    request.ext[1] = filename[parseId + 2];
+    request.ext[2] = filename[parseId + 3];
+
+    i = 0;
+    for (; i < 8; i++)
+    {
+        request.name[i] = realFileName[i];
+    }
+
+    i = 0;
+    for (; i < 64; i++)
+    {
+        if (strcmp(curr_dir.table[i].name, realFileName) == 0)
+        {
+            // attribute = curr_dir.table[i].attribute;
+            // user_attribute=curr_dir.table[i].user_attribute;
+            // cluster_high= curr_dir.table[i].cluster_high;
+            // cluster_low = curr_dir.table[i].cluster_low ;
+            filesize = curr_dir.table[i].filesize;
+        }
+    }
+    request.buf =(uint8_t *)0;
+    request.buffer_size = filesize;
+    syscall_user(15, (uint32_t)&request, (uint32_t)&retcode, 0);
+    if (retcode != 0)
+    {
+        syscall_user(6, (uint32_t) "FAILED TO EXEC SRCFILE\n", 23, RED);
+        return;
+    }
+}
+
+void pees(){
+    struct ProcessControlBlock pcb;
+    
+    syscall_user(15,(uint32_t)&pcb,0,0);
+    syscall_user(6, (uint32_t) "PROCESS INFO: \n", 15, BLUE);
+    syscall_user(6, (uint32_t) "ID: ", 4, GREEN);
+    printInt(pcb.metadata.pid);
+    syscall_user(5,(uint32_t)&"\n",GREEN,0);
+    syscall_user(6, (uint32_t) "NAME: ", 7, GREEN);
+    uint8_t i = 0;
+    for (;i<PROCESS_NAME_LENGTH_MAX && pcb.metadata.name[i]!=0;i++){
+        syscall_user(5, (uint32_t)pcb.metadata.name + i, WHITE,0);    
+    }
+    syscall_user(5, (uint32_t)"\n", WHITE,0);    
+    syscall_user(6, (uint32_t) "STATUS: ", 8, WHITE);
+    if (pcb.metadata.state==0){
+        syscall_user(6, (uint32_t) "READY ", 6, YELLOW);
+    }else if (pcb.metadata.state==1){
+        syscall_user(6, (uint32_t) "RUNNING ", 8, GREEN);
+    }else if (pcb.metadata.state==2){
+        syscall_user(6, (uint32_t) "BLOCKED ", 8, RED);
+
+    }
+    syscall_user(5,(uint32_t)&"\n",WHITE,0);
 }
 void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
 
@@ -1317,6 +1467,21 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
         else
         {
             syscall_user(6, (uint32_t) "[ERROR]: Usage: nano <filepath> \n", 33, RED);
+        }
+    }
+    else if (strcmp("exec",args[0])==0){
+        if (argc==2){
+            eksek(args[1],dir_stack, dir_stack_index,dir_name_stack);
+        }else
+        {
+            syscall_user(6, (uint32_t) "[ERROR]: Usage: exec <filepath>\n", 32, RED);
+        }
+    }else if (strcmp("ps",args[0])==0){
+        if (argc==1){
+            pees();
+        }else
+        {
+            syscall_user(6, (uint32_t) "[ERROR]: Usage: ps\n", 20, RED);
         }
     }
     else

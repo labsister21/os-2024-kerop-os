@@ -122,13 +122,12 @@ void syscall(struct InterruptFrame frame)
         break;
 
     case 14: 
-        ;struct ProcessControlBlock* pcb = process_get_current_running_pcb_pointer();
-        if (pcb!=NULL){
-            *((int8_t *) frame.cpu.general.ecx) = process_destroy((uint32_t) pcb->metadata.pid);
-        }
+        ;struct ProcessControlBlock pcb = *(struct ProcessControlBlock*) process_get_current_running_pcb_pointer();
+            *((int8_t *) frame.cpu.general.ecx) = process_destroy((uint32_t) pcb.metadata.pid);
         break;
     case 15:
-        frame.cpu.general.ebx = (uint32_t) process_get_current_running_pcb_pointer();
+        *(struct ProcessControlBlock*) frame.cpu.general.ebx =  *(struct ProcessControlBlock*) process_get_current_running_pcb_pointer();
+        break;
     }
 
 }
