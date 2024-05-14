@@ -19,11 +19,8 @@ void set_cmos(int8_t reg, uint8_t val)
     out(CMOS_ADDRESS, reg);
     out(CMOS_DATA, val);
 }
-
 void read_CMOS()
 {
-    while (get_update_in_process_flag())
-        ;
     Clock.second = get_rtc_register(REG_SECONDS);
     Clock.minute = get_rtc_register(REG_MINUTES);
     Clock.hour = get_rtc_register(REG_HOURS);
@@ -34,6 +31,10 @@ void read_CMOS()
         Clock.second = ((Clock.second & 0x0F) + (Clock.second / 16) * 10);
         Clock.minute = ((Clock.minute & 0x0F) + (Clock.minute / 16) * 10);
         Clock.hour = ((Clock.hour & 0x0F) + (((Clock.hour & 0x70) / 16) * 10)) | (Clock.hour & 0x80);
+    }
+    if (!(regCode & 0x02) && (Clock.hour & 0x80))
+    {
+        Clock.hour = ((Clock.hour & 0x7F) + 12) % 24;
     }
 }
 

@@ -6,6 +6,7 @@
 #include "header/filesystem/fat32.h"
 #include "header/process/process.h"
 #include "header/scheduler/scheduler.h"
+#include "header/driver/cmos_driver.h"
 
 struct TSSEntry _interrupt_tss_entry = {
     .ss0 = GDT_KERNEL_DATA_SEGMENT_SELECTOR,
@@ -129,11 +130,21 @@ void syscall(struct InterruptFrame frame)
         *(struct ProcessControlBlock *)frame.cpu.general.ebx = *(struct ProcessControlBlock *)process_get_current_running_pcb_pointer();
         break;
     case 16:
-        read_CMOS();
+        struct FAT32DriverRequest clockreq = {
+            .buf = (uint8_t *)0,
+            .name = "clock",
+            .ext = "\0\0\0",
+            .parent_cluster_number = ROOT_CLUSTER_NUMBER,
+            .buffer_size = 0x800};
+        process_create_user_process(clockreq);
+        break;
+    case 17:
+        *(int8_t *)frame.cpu.general.ebx = get_update_in_process_flag();
+        break;
+    case 18:
+        read_CMOS(); // init
         struct clock currTime = get_clock();
-        *(uint8_t *)frame.cpu.general.ebx = currTime.second;
-        *(uint8_t *)frame.cpu.general.ecx = currTime.minute;
-        *(uint8_t *)frame.cpu.general.edx = currTime.hour;
+        write_CMOS(&currTime);
         break;
     }
 }
