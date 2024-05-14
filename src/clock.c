@@ -19,13 +19,17 @@ void syscall_user(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx)
 
 int main(void)
 {
-    // int8_t flag = 1;
-    // while (flag)
-    // {
-    //     syscall_user(17, (uint32_t)&flag, 0, 0);
-    //     syscall_user(18, 0, 0, 0);
-    // }
-    syscall_user(6, (uint32_t) "Ini clock", 9, 0x0C);
+    int8_t flag;
+    while (true)
+    {
+        syscall_user(17, (uint32_t)&flag, 0, 0);
+        char hour[2];
+        char minute[2];
+        char seconds[2];
+        syscall_user(18, (uint32_t)&seconds, (uint32_t)&minute, (uint32_t)&hour);
+        syscall_user(6, (uint32_t)seconds, 2, 0x0F);
+    }
+    // syscall_user(6, (uint32_t) "Ini clock", 9, 0x0C);
 
     return 0;
 }
