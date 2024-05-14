@@ -627,7 +627,11 @@ void ket(char *Filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
             syscall_user(0, (uint32_t)&request2, (uint32_t)&retcode, 0);
             if (retcode == 0)
             {
-                syscall_user(6, (uint32_t)fileBuff.buf, request2.buffer_size, WHITE);
+                uint32_t clustnum = 0;
+                for (;clustnum<request2.buffer_size;clustnum++){
+                    syscall_user(5, (uint32_t)fileBuff.buf+clustnum, WHITE, 0);
+                    // syscall_user(6, (uint32_t)fileBuff.buf, request2.buffer_size, WHITE);
+                }
                 syscall_user(6, (uint32_t) "\n", 1, WHITE);
                 return;
             }
@@ -1022,7 +1026,7 @@ void nano(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index){
     {
         request.name[i] = realFileName[i];
     }
-    char buff[64];
+    char buff[CLUSTER_SIZE];
     
     int j = 0;
     char input = 'a';
@@ -1053,9 +1057,6 @@ void nano(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index){
         }
     }while(input!='\n');
     request.buffer_size = j;
-    for (;j<64;j++){
-        buff[j] = 0;
-    }
     request.buf = buff;
     int8_t retcode;
     syscall_user(2,(uint32_t)&request,(uint32_t)&retcode,0);
@@ -1185,6 +1186,18 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
                     syscall_user(5, (uint32_t) "e", LIGHT_PURPLE, 0);
                     syscall_user(5, (uint32_t) "a", LIGHT_PURPLE, 0);
                     syscall_user(5, (uint32_t) "r", LIGHT_PURPLE, 0);
+                }else if (buff[0] == 'n' && buff[1] == 'a' && buff[2] == 'n' && buff[3] == 'o' && buff[4] == ' ')
+                {
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "n", LIGHT_PURPLE, 0);
+                    syscall_user(5, (uint32_t) "a", LIGHT_PURPLE, 0);
+                    syscall_user(5, (uint32_t) "n", LIGHT_PURPLE, 0);
+                    syscall_user(5, (uint32_t) "o", LIGHT_PURPLE, 0);
+                    syscall_user(5, (uint32_t) " ", WHITE, 0);
                 }
             }
             else if (i == 6)

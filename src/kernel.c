@@ -257,30 +257,7 @@ void kernel_setup(void) {
     set_tss_kernel_current_stack();
 
     // Create init process and execute it
-    // process_create_user_process(request);
-    //     struct FAT32DriverRequest req =
-    //     {
-    //         .buf = "wawaaw",
-    //         .name = "hihuha",
-    //         .ext = "txt",
-    //         .parent_cluster_number = 2,
-    //         .buffer_size = 7};
-    // write(req);
-    // struct FAT32DriverRequest req2 =
-    //     {
-    //         .name = "fold",
-    //         .parent_cluster_number = 2,
-    //         .ext = "\0\0\0",
-    //         .buffer_size = 0};
-    // write(req2);
-    // struct FAT32DriverRequest req3 =
-    //     {
-    //         .buf = "Mari Nubes Sampai Tipes !\n",
-    //         .name = "albert",
-    //         .parent_cluster_number = 12,
-    //         .ext = "txt",
-    //         .buffer_size = 27};
-    // write(req3);
+    process_create_user_process(request);
     // paging_use_page_directory(_process_list[0].context.page_directory_virtual_addr);
     // kernel_execute_user_program((void*) 0x0);
     scheduler_init();
