@@ -18,7 +18,7 @@ void scheduler_init(void) {
 void scheduler_save_context_to_current_running_pcb(struct Context ctx){
     struct ProcessControlBlock *pcb = process_get_current_running_pcb_pointer();
     if(pcb != NULL){
-        pcb->metadata.state = READY;
+        pcb->metadata.state = RUNNING;
         pcb->context = ctx;
     }
 }
