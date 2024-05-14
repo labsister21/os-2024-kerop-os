@@ -116,6 +116,19 @@ void syscall(struct InterruptFrame frame)
          *((int8_t *)frame.cpu.general.ecx) = delete(
             *(struct FAT32DriverRequest *)frame.cpu.general.ebx);
         break;
+    case 13:
+        *((int8_t *)frame.cpu.general.ecx) = 
+            process_create_user_process(*(struct FAT32DriverRequest*) frame.cpu.general.ebx);
+        break;
+
+    case 14: 
+        ;struct ProcessControlBlock* pcb = process_get_current_running_pcb_pointer();
+        if (pcb!=NULL){
+            *((int8_t *) frame.cpu.general.ecx) = process_destroy((uint32_t) pcb->metadata.pid);
+        }
+        break;
+    case 15:
+        frame.cpu.general.ebx = (uint32_t) process_get_current_running_pcb_pointer();
     }
 
 }
