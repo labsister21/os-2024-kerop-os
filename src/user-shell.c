@@ -126,41 +126,7 @@ FileInfo dequeue(Queue *queue)
     }
     return item;
 }
-void printInt(int num)
-{
-    // Check if num is 0
-    char input = '0';
-    if (num == 0)
-    {
-        syscall_user(5, (uint32_t)&input, WHITE, 0);
-        return;
-    }
 
-    // Calculate the number of digits
-    int temp = num;
-    int numDigits = 0;
-    while (temp > 0)
-    {
-        temp /= 10;
-        numDigits++;
-    }
-    char result[4] = "\0\0\0\0";
-    // Convert digits to characters
-    int k = 0;
-    for (int i = numDigits - 1; num > 0; i--)
-    {
-        input = (num % 10) + '0';
-        result[k] = input;
-        k += 1;
-        // syscall_user(5, (uint32_t)&input, WHITE, 0);
-        num /= 10;
-    }
-    k = 3;
-    for (;k>=0;k--){
-        syscall_user(5, (uint32_t)(result+k), WHITE, 0);
-    }
-    return;
-}
 int isEmpty(Queue *queue)
 {
     return (queue->front == -1);
@@ -1187,11 +1153,11 @@ void eksek(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (
         parseId += 1;
     }
 
-    if (parseId > 8)
-    {
-        syscall_user(6, (uint32_t) "INVALID FILE NAME\n", 18, RED);
-        return;
-    }
+    // if (parseId > 8)
+    // {
+    //     syscall_user(6, (uint32_t) "INVALID FILE NAME\n", 18, RED);
+    //     return;
+    // }
 
     request.ext[0] = filename[parseId + 1];
     request.ext[1] = filename[parseId + 2];
@@ -1215,12 +1181,13 @@ void eksek(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (
             filesize = curr_dir.table[i].filesize;
             request.buf = (uint8_t *)0;
             request.buffer_size = filesize;
-            syscall_user(15, (uint32_t)&request, (uint32_t)&retcode, 0);
+            syscall_user(13, (uint32_t)&request, (uint32_t)&retcode, 0);
             if (retcode != 0)
             {
                 syscall_user(6, (uint32_t) "FAILED TO EXEC SRCFILE\n", 23, RED);
                 return;
             }
+            return;
         }
     }
     syscall_user(6, (uint32_t) "FILE NOT FOUND\n", 15, RED);
@@ -1228,34 +1195,39 @@ void eksek(char *filename, uint32_t *dir_stack, uint8_t *dir_stack_index, char (
 
 void pees()
 {
-    struct ProcessControlBlock pcb;
-
-    syscall_user(15, (uint32_t)&pcb, 0, 0);
-    syscall_user(6, (uint32_t) "PROCESS INFO: \n", 15, BLUE);
-    syscall_user(6, (uint32_t) "ID: ", 4, GREEN);
-    printInt(pcb.metadata.pid);
-    syscall_user(5, (uint32_t) & "\n", GREEN, 0);
-    syscall_user(6, (uint32_t) "NAME: ", 7, GREEN);
-    uint8_t i = 0;
-    for (; i < PROCESS_NAME_LENGTH_MAX && pcb.metadata.name[i] != 0; i++)
-    {
-        syscall_user(5, (uint32_t)pcb.metadata.name + i, WHITE, 0);
-    }
-    syscall_user(5, (uint32_t) "\n", WHITE, 0);
-    syscall_user(6, (uint32_t) "STATUS: ", 8, WHITE);
-    if (pcb.metadata.state == 0)
-    {
-        syscall_user(6, (uint32_t) "READY ", 6, YELLOW);
-    }
-    else if (pcb.metadata.state == 1)
-    {
-        syscall_user(6, (uint32_t) "RUNNING ", 8, GREEN);
-    }
-    else if (pcb.metadata.state == 2)
-    {
-        syscall_user(6, (uint32_t) "BLOCKED ", 8, RED);
-    }
-    syscall_user(5, (uint32_t) & "\n", WHITE, 0);
+    // uint8_t j = 0;
+    // struct ProcessControlBlock* pcbList;
+    syscall_user(20, 0, 0, 0);
+    // for (;j<16;j++){
+    //     if (process_manager_state.list_of_process[j]){
+    //         syscall_user(6, (uint32_t) "PROCESS INFO: \n", 15, BLUE);
+    //         syscall_user(6, (uint32_t) "ID: ", 4, GREEN);
+    //         printInt(pcbList[j].metadata.pid);
+    //         syscall_user(5, (uint32_t) & "\n", GREEN, 0);
+    //         syscall_user(6, (uint32_t) "NAME: ", 7, GREEN);
+    //         uint8_t i = 0;
+    //         for (; i < PROCESS_NAME_LENGTH_MAX && pcbList[j].metadata.name[i] != 0; i++)
+    //         {
+    //             syscall_user(5, (uint32_t)pcbList[j].metadata.name + i, WHITE, 0);
+    //         }
+    //         syscall_user(5, (uint32_t) "\n", WHITE, 0);
+    //         syscall_user(6, (uint32_t) "STATUS: ", 8, WHITE);
+    //         if (pcbList[j].metadata.state == 0)
+    //         {
+    //             syscall_user(6, (uint32_t) "READY ", 6, YELLOW);
+    //         }
+    //         else if (pcbList[j].metadata.state == 1)
+    //         {
+    //             syscall_user(6, (uint32_t) "RUNNING ", 8, GREEN);
+    //         }
+    //         else if (pcbList[j].metadata.state == 2)
+    //         {
+    //             syscall_user(6, (uint32_t) "BLOCKED ", 8, RED);
+    //         }
+    //         syscall_user(5, (uint32_t) & "\n", WHITE, 0);
+    //     }
+    // }   
+    
 }
 void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
 

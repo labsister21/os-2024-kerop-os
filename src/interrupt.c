@@ -8,6 +8,62 @@
 #include "header/scheduler/scheduler.h"
 #include "header/driver/cmos_driver.h"
 
+#define MAX_DIR_STACK_SIZE 16
+#define BLACK 0x00
+#define DARK_BLUE 0x01
+#define DARK_GREEN 0x2
+#define DARK_AQUA 0x3
+#define DARK_RED 0x4
+#define DARK_PURPLE 0x5
+#define GOLD 0x6
+#define GRAY 0x7
+#define DARK_GRAY 0x8
+#define BLUE 0x09
+#define GREEN 0x0A
+#define AQUA 0x0B
+#define RED 0x0C
+#define LIGHT_PURPLE 0x0D
+#define YELLOW 0x0E
+#define WHITE 0x0F
+#define MAX_INPUT_BUFFER 63
+#define MAX_ARGS 0x3
+#define MAX_QUEUE_SIZE 20
+
+void printInt(int num)
+{
+    // Check if num is 0
+    char input = '0';
+    if (num == 0)
+    {
+        putchar((char *) &input, WHITE);
+        return;
+    }
+
+    // Calculate the number of digits
+    int temp = num;
+    int numDigits = 0;
+    while (temp > 0)
+    {
+        temp /= 10;
+        numDigits++;
+    }
+    char result[4] = "\0\0\0\0";
+    // Convert digits to characters
+    int k = 0;
+    for (int i = numDigits - 1; num > 0; i--)
+    {
+        input = (num % 10) + '0';
+        result[k] = input;
+        k += 1;
+        // syscall_user(5, (uint32_t)&input, WHITE, 0);
+        num /= 10;
+    }
+    k = 3;
+    for (;k>=0;k--){
+        putchar((char *)(result+k), WHITE);
+    }
+    return;
+}
 struct TSSEntry _interrupt_tss_entry = {
     .ss0 = GDT_KERNEL_DATA_SEGMENT_SELECTOR,
 };
@@ -150,7 +206,50 @@ void syscall(struct InterruptFrame frame)
         break;
     case 19:
         putTime((char*)frame.cpu.general.ebx,(char*)frame.cpu.general.ecx,(char*)frame.cpu.general.edx);
+        break;
+    case 20:
+        // ;uint8_t i = 0;
+        // uint8_t maxPid = 0;
+        // for (;i<16;i++){
+        //     if (process_manager_state.list_of_process[i]){
+        //         maxPid = i;
+        //     }
+        // }   
+        // (struct ProcessControlBlock *)frame.cpu.general.ebx = (struct ProcessControlBlock *) _process_list;
+        
+        for (int j =0 ;j<16;j++){
+        if (process_manager_state.list_of_process[j]){
+            puts((char *)"PROCESS INFO: \n", 15, BLUE);
+            puts((char *) "ID: ", 4, GREEN);
+            printInt(_process_list[j].metadata.pid);
+            putchar((char *)"\n", GREEN);
+            puts((char *)"NAME: ", 7, GREEN);
+            uint8_t i = 0;
+            for (; i < PROCESS_NAME_LENGTH_MAX && _process_list[j].metadata.name[i] != 0; i++)
+            {
+                putchar((char *)_process_list[j].metadata.name + i, WHITE);
+            }
+            putchar((char *) "\n", WHITE);
+            puts((char *)"STATUS: ", 8, WHITE);
+            if (_process_list[j].metadata.state == 0)
+            {
+                puts( (char *)"READY ", 6, YELLOW);
+            }
+            else if (_process_list[j].metadata.state == 1)
+            {
+                puts( (char *)"RUNNING ", 8, GREEN);
+            }
+            else if (_process_list[j].metadata.state == 2)
+            {
+                puts((char *)"BLOCKED ", 8, RED);
+            }
+            putchar((char *)"\n", WHITE);
+        }
+    }   
+        break;
+
     }
+
 }
 
 void main_interrupt_handler(struct InterruptFrame frame)
