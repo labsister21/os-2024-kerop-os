@@ -359,14 +359,12 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
         .buffer_size = 0,
     };
     uint8_t parseId = 0;
-    uint8_t charcount = 0;
     if (strcmp("../", dirname) == 0)
     {
         do
         {
             parseId++;
             dirname += 3;
-            charcount += 3;
 
         } while (strcmp("../", dirname) == 0);
 
@@ -379,7 +377,7 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
             ((*dir_stack_index) -= parseId);
         }
     }
-    else if (strcmp("..", dirname) == 0)
+    if (strcmp("..", dirname) == 0)
     {
         if (*dir_stack_index <= 1)
         {
@@ -398,19 +396,19 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
 
     for (int i = 0; i < 8; i++)
     {
-        request.name[i] = dirname[i + charcount];
+        request.name[i] = dirname[i];
     }
 
     int8_t retcode;
     syscall_user(1, (uint32_t)&request, (uint32_t)&retcode, 0);
     syscall_user(10, (uint32_t)&req_table, dir_stack[*dir_stack_index - 1], 0);
 
-    if (retcode != 0)
-    {
-        char err[18] = "INVALID DIRECTORY\n";
-        syscall_user(6, (uint32_t)err, 18, RED);
-        return;
-    }
+    // if (retcode != 0 && request.name[0] != '.')
+    // {
+    //     char err[18] = "INVALID DIRECTORY\n";
+    //     syscall_user(6, (uint32_t)err, 18, RED);
+    //     return;
+    // }
     for (uint8_t j = 0; j < 8; j++)
     {
         dir_name_stack[*dir_stack_index][j] = dirname[j];
@@ -429,7 +427,9 @@ void cede(char *dirname, uint32_t *dir_stack, uint8_t *dir_stack_index, char (*d
             }
         }
     }
-    syscall_user(6, (uint32_t) "[ERROR] FILE NOT FOUND\n", 23, RED);
+    if (strcmp("..",request.name)!=0 && request.name[0]!='\0'){
+        syscall_user(6, (uint32_t) "[ERROR] FOLDER NOT FOUND\n", 25, RED);
+    }
 }
 void bfs_find(char *target_name)
 {
@@ -1215,7 +1215,7 @@ void pees()
 void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name_stack)[8])
 
 {
-    char buff[MAX_INPUT_BUFFER];
+    char buff[CLUSTER_SIZE];
     int i = 0;
     char input = 'a';
     do
@@ -1449,7 +1449,7 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
         }
         else
         {
-            syscall_user(6, (uint32_t) "[ERROR]: Usage: mv <sourcename> <destpath>\n", 42, RED);
+            syscall_user(6, (uint32_t) "[ERROR]: Usage: mv <sourcename> <destpath>\n", 43, RED);
         }
     }
     else if (strcmp("rm", args[0]) == 0)
@@ -1471,7 +1471,7 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
         }
         else
         {
-            syscall_user(6, (uint32_t) "[ERROR]: Usage: rm <filesrcpath> <filesdestpath>\n", 49, RED);
+            syscall_user(6, (uint32_t) "[ERROR]: Usage: cp <filesrcpath> <filesdestpath>\n", 49, RED);
         }
     }
     else if (strcmp("nano", args[0]) == 0)
@@ -1493,7 +1493,7 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
         }
         else
         {
-            syscall_user(6, (uint32_t) "[ERROR]: Usage: ./<filepath>\n", 32, RED);
+            syscall_user(6, (uint32_t) "[ERROR]: Usage: ./<filepath>\n", 29, RED);
         }
     }
     else if (strcmp("ps", args[0]) == 0)
@@ -1504,7 +1504,7 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
         }
         else
         {
-            syscall_user(6, (uint32_t) "[ERROR]: Usage: ps\n", 20, RED);
+            syscall_user(6, (uint32_t) "[ERROR]: Usage: ps\n", 19, RED);
         }
     }
 

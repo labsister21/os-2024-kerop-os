@@ -252,7 +252,7 @@ void syscall(struct InterruptFrame frame)
         break;
     case 21:
 
-        struct ProcessControlBlock pcb;
+        ;struct ProcessControlBlock pcb;
         int8_t is_clock;
         int8_t retcode;
         char *arg = (char *)frame.cpu.general.ebx;
