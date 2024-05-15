@@ -1266,6 +1266,12 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
                     syscall_user(5, (uint32_t) "\b", 0xF, 0);
                     syscall_user(5, (uint32_t) "l", BLUE, 0);
                     syscall_user(5, (uint32_t) "s", BLUE, 0);
+                }else if (buff[0] == 'p' && buff[1] == 's')
+                {
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "p", BLUE, 0);
+                    syscall_user(5, (uint32_t) "s", BLUE, 0);
                 }
             }
             else if (i == 3)
@@ -1360,6 +1366,19 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
                     syscall_user(5, (uint32_t) "a", LIGHT_PURPLE, 0);
                     syscall_user(5, (uint32_t) "n", LIGHT_PURPLE, 0);
                     syscall_user(5, (uint32_t) "o", LIGHT_PURPLE, 0);
+                    syscall_user(5, (uint32_t) " ", WHITE, 0);
+                }
+                else if (buff[0] == 'k' && buff[1] == 'i' && buff[2] == 'l' && buff[3] == 'l' && buff[4] == ' ')
+                {
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "\b", 0xF, 0);
+                    syscall_user(5, (uint32_t) "k", DARK_RED, 0);
+                    syscall_user(5, (uint32_t) "i", DARK_RED, 0);
+                    syscall_user(5, (uint32_t) "l", DARK_RED, 0);
+                    syscall_user(5, (uint32_t) "l", DARK_RED, 0);
                     syscall_user(5, (uint32_t) " ", WHITE, 0);
                 }
             }
@@ -1530,7 +1549,6 @@ int main(void)
     uint8_t DIR_STACK_INDEX = 1;
 
     syscall_user(7, 0, 0, 0);
-
     while (true)
     {
         char intro[10] = "kerop-os/";
