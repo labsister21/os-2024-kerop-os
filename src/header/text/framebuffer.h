@@ -49,8 +49,8 @@ void framebuffer_set_cursor(uint8_t r, uint8_t c);
  */
 void framebuffer_clear(void);
 void puts(char *ebx, uint8_t length, uint8_t textcolor);
-void putchar(char* ebx, uint8_t ecx);
+void putchar(char *ebx, uint8_t ecx);
 struct Cursor framebuffer_get_cursor();
 int offset_framebuffer(int offset);
-void putTime(char* hour, char* min, char* sec);
+void putTime(char *hour, char *min, char *sec, char titik);
 #endif

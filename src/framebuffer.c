@@ -48,7 +48,7 @@ void framebuffer_clear(void)
     }
 }
 
-void putchar(char* ebx, uint8_t ecx)
+void putchar(char *ebx, uint8_t ecx)
 {
     char kata = *ebx;
     struct Cursor c = framebuffer_get_cursor();
@@ -56,52 +56,60 @@ void putchar(char* ebx, uint8_t ecx)
     int newcol = c.col;
     // int offset = c.row * 80 + c.col;
     // if (kata>=0x20 && kata<=0x79){
-        if (kata!='\n' && kata!=0){
-            if (newrow > 23){
-                framebuffer_clear();
-                newrow = 0;
-                newcol = 0;
-            }
-            if (kata!='\b'){
-                framebuffer_write(c.row, c.col, kata, ecx, 0);
-                newcol += 1;
-            }else{
-                    newcol -= 1;
-                    framebuffer_write(c.row, newcol, 0, ecx, 0);
-            }
-            
-        }else{
-            newrow += 1;
+    if (kata != '\n' && kata != 0)
+    {
+        if (newrow > 23)
+        {
+            framebuffer_clear();
+            newrow = 0;
             newcol = 0;
         }
-        if (kata!=0){
-            
-            if (c.col == 79)
-                {
-                    framebuffer_set_cursor(newrow + 1, 0);
-                }   
-            else
-                {
-                    framebuffer_set_cursor(newrow, newcol);
-                }
+        if (kata != '\b')
+        {
+            framebuffer_write(c.row, c.col, kata, ecx, 0);
+            newcol += 1;
         }
+        else
+        {
+            newcol -= 1;
+            framebuffer_write(c.row, newcol, 0, ecx, 0);
+        }
+    }
+    else
+    {
+        newrow += 1;
+        newcol = 0;
+    }
+    if (kata != 0)
+    {
+
+        if (c.col == 79)
+        {
+            framebuffer_set_cursor(newrow + 1, 0);
+        }
+        else
+        {
+            framebuffer_set_cursor(newrow, newcol);
+        }
+    }
     // }
 }
 void puts(char *ebx, uint8_t length, uint8_t textcolor)
 {
     // struct Cursor c = framebuffer_get_cursor();
-    for (uint8_t i=0;i<length;i++){
-        putchar(ebx+i,textcolor);
+    for (uint8_t i = 0; i < length; i++)
+    {
+        putchar(ebx + i, textcolor);
     }
-   
 }
-void putTime(char* hour, char* min, char* sec){
+void putTime(char *hour, char *min, char *sec, char titik)
+{
     framebuffer_write(24, 72, hour[0], 0x0B, 0);
     framebuffer_write(24, 73, hour[1], 0x0B, 0);
-    framebuffer_write(24, 74, ':', 0x0B, 0);
+    framebuffer_write(24, 74, titik, 0x0B, 0);
     framebuffer_write(24, 75, min[0], 0x0B, 0);
     framebuffer_write(24, 76, min[1], 0x0B, 0);
-    framebuffer_write(24, 77, ':', 0x0B, 0);
+    framebuffer_write(24, 77, titik, 0x0B, 0);
     framebuffer_write(24, 78, sec[0], 0x0B, 0);
     framebuffer_write(24, 79, sec[1], 0x0B, 0);
 }
