@@ -252,7 +252,8 @@ void syscall(struct InterruptFrame frame)
         break;
     case 21:
 
-        ;struct ProcessControlBlock pcb;
+        ;
+        struct ProcessControlBlock pcb;
         int8_t is_clock;
         int8_t retcode;
         char *arg = (char *)frame.cpu.general.ebx;
@@ -286,6 +287,132 @@ void syscall(struct InterruptFrame frame)
         {
             puts((char *)"Proses Tidak Berhasil dihapus!\n", 31, GREEN);
         }
+        break;
+
+    case 22:
+
+        for (int8_t i = 0; i < 20; i++)
+        {
+            framebuffer_write(11, i + 30, ' ', WHITE, DARK_GRAY);
+            framebuffer_write(12, i + 30, ' ', WHITE, DARK_GRAY);
+            framebuffer_write(13, i + 30, ' ', WHITE, DARK_GRAY);
+
+            for (int64_t j = 0; j < 10; j++)
+            {
+            }
+        }
+        for (int8_t i = 0; i < 20; i++)
+        {
+            framebuffer_write(11, i + 30, ' ', WHITE, YELLOW);
+            framebuffer_write(12, i + 30, ' ', WHITE, YELLOW);
+            framebuffer_write(13, i + 30, ' ', WHITE, YELLOW);
+
+            for (int64_t j = 0; j < 10000000; j++)
+            {
+            }
+        }
+        framebuffer_clear();
+        // Huruf H
+        framebuffer_write(7, 30, ' ', WHITE, YELLOW);
+        framebuffer_write(8, 30, ' ', WHITE, YELLOW);
+        framebuffer_write(9, 30, ' ', WHITE, YELLOW);
+        framebuffer_write(10, 30, ' ', WHITE, YELLOW);
+        framebuffer_write(11, 30, ' ', WHITE, YELLOW);
+        framebuffer_write(12, 30, ' ', WHITE, YELLOW);
+        framebuffer_write(13, 30, ' ', WHITE, YELLOW);
+        framebuffer_write(7, 31, ' ', WHITE, YELLOW);
+        framebuffer_write(8, 31, ' ', WHITE, YELLOW);
+        framebuffer_write(9, 31, ' ', WHITE, YELLOW);
+        framebuffer_write(10, 31, ' ', WHITE, YELLOW);
+        framebuffer_write(11, 31, ' ', WHITE, YELLOW);
+        framebuffer_write(12, 31, ' ', WHITE, YELLOW);
+        framebuffer_write(13, 31, ' ', WHITE, YELLOW);
+
+        framebuffer_write(7, 32, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(8, 32, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(9, 32, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(11, 32, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(12, 32, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(13, 32, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(14, 32, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(14, 31, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(14, 30, ' ', WHITE, DARK_GREEN);
+
+        framebuffer_write(10, 32, ' ', WHITE, YELLOW);
+        framebuffer_write(10, 33, ' ', WHITE, YELLOW);
+        framebuffer_write(10, 34, ' ', WHITE, YELLOW);
+        framebuffer_write(10, 35, ' ', WHITE, YELLOW);
+        framebuffer_write(10, 36, ' ', WHITE, YELLOW);
+
+        framebuffer_write(11, 32, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(11, 33, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(11, 34, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(11, 35, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(11, 36, ' ', WHITE, DARK_GREEN);
+
+        framebuffer_write(7, 35, ' ', WHITE, YELLOW);
+        framebuffer_write(8, 35, ' ', WHITE, YELLOW);
+        framebuffer_write(9, 35, ' ', WHITE, YELLOW);
+        framebuffer_write(10, 35, ' ', WHITE, YELLOW);
+        framebuffer_write(11, 35, ' ', WHITE, YELLOW);
+        framebuffer_write(12, 35, ' ', WHITE, YELLOW);
+        framebuffer_write(13, 35, ' ', WHITE, YELLOW);
+        framebuffer_write(7, 36, ' ', WHITE, YELLOW);
+        framebuffer_write(8, 36, ' ', WHITE, YELLOW);
+        framebuffer_write(9, 36, ' ', WHITE, YELLOW);
+        framebuffer_write(10, 36, ' ', WHITE, YELLOW);
+        framebuffer_write(11, 36, ' ', WHITE, YELLOW);
+        framebuffer_write(12, 36, ' ', WHITE, YELLOW);
+        framebuffer_write(13, 36, ' ', WHITE, YELLOW);
+
+        framebuffer_write(7, 37, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(8, 37, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(9, 37, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(10, 37, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(11, 37, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(12, 37, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(13, 37, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(14, 37, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(14, 36, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(14, 35, ' ', WHITE, DARK_GREEN);
+
+        // huruf I
+        framebuffer_write(7, 40, ' ', WHITE, YELLOW);
+        framebuffer_write(8, 40, ' ', WHITE, YELLOW);
+        framebuffer_write(9, 40, ' ', WHITE, YELLOW);
+        framebuffer_write(10, 40, ' ', WHITE, YELLOW);
+        framebuffer_write(11, 40, ' ', WHITE, YELLOW);
+        framebuffer_write(12, 40, ' ', WHITE, YELLOW);
+        framebuffer_write(13, 40, ' ', WHITE, YELLOW);
+        framebuffer_write(7, 41, ' ', WHITE, YELLOW);
+        framebuffer_write(8, 41, ' ', WHITE, YELLOW);
+        framebuffer_write(9, 41, ' ', WHITE, YELLOW);
+        framebuffer_write(10, 41, ' ', WHITE, YELLOW);
+        framebuffer_write(11, 41, ' ', WHITE, YELLOW);
+        framebuffer_write(12, 41, ' ', WHITE, YELLOW);
+        framebuffer_write(13, 41, ' ', WHITE, YELLOW);
+
+        framebuffer_write(7, 42, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(8, 42, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(9, 42, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(10, 42, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(11, 42, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(12, 42, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(13, 42, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(13, 42, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(14, 42, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(14, 41, ' ', WHITE, DARK_GREEN);
+        framebuffer_write(14, 40, ' ', WHITE, DARK_GREEN);
+
+        for (int8_t i = 0; i < 10; i++)
+        {
+
+            for (int64_t j = 0; j < 10000000; j++)
+            {
+            }
+        }
+
+        break;
     }
 }
 

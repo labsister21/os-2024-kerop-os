@@ -1535,7 +1535,11 @@ int main(void)
     DIR_NUMBER_STACK[0] = ROOT_CLUSTER_NUMBER;
     uint8_t DIR_STACK_INDEX = 1;
 
+
+
     syscall_user(7, 0, 0, 0);
+    syscall_user(22,0,0,0);
+    syscall_user(9,0,0,0);
     while (true)
     {
         char intro[10] = "kerop-os/";
