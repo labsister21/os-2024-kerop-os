@@ -1487,6 +1487,11 @@ void exec_command(uint32_t *dir_stack, uint8_t *dir_stack_index, char (*dir_name
     }
     else if (strcmp("./", args[0]) == 0 || strcmp("../", args[0]) == 0)
     {
+        if(strcmp("./shell",args[0]) == 0){
+            syscall_user(6, (uint32_t) "Cant run shell again!\n",22, RED);
+            return;
+
+        }
         if (argc == 1)
         {
             eksek(args[0], dir_stack, dir_stack_index, dir_name_stack);

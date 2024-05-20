@@ -9,6 +9,10 @@
 | 4   | Albert Ghazaly          | 13522150 |
 
 
+## Snapshots
+![Loading](gif/loading.gif)
+![shell](gif/shell.gif)
+
 ## Table of Contents
 * [Anggota](#anggota)
 * [Deskripsi Program](#deskripsi-program)
