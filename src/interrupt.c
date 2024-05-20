@@ -274,19 +274,25 @@ void syscall(struct InterruptFrame frame)
         {
             is_clock = 1;
         }
-        retcode = process_destroy(piddd);
-        if (retcode)
-        {
-            puts((char *)"Proses Berhasil dihapus!\n", 25, GREEN);
-            if (is_clock)
+        retcode = 0;
+        if (!strcmp(pcb.metadata.name,"shell")==0){
+            retcode = process_destroy(piddd);
+            if (retcode)
             {
-                putTime((char *)"  ", (char *)"  ", (char *)"  ", ' ');
+                puts((char *)"Proses Berhasil dihapus!\n", 25, GREEN);
+                if (is_clock)
+                {
+                    putTime((char *)"  ", (char *)"  ", (char *)"  ", ' ');
+                }
             }
+            else
+            {
+                puts((char *)"Proses Tidak Berhasil dihapus!\n", 31, RED);
+            }
+        }else{
+             puts((char *)"Proses Shell tidak Diizinkan untuk Dihapus!\n", 44, RED);
         }
-        else
-        {
-            puts((char *)"Proses Tidak Berhasil dihapus!\n", 31, GREEN);
-        }
+       
         break;
 
     case 22:
