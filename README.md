@@ -65,9 +65,11 @@ Milestone 3
   `https://github.com/labsister21/os-2024-kerop-os.git`
 2. Change Directory to this repository 
   `cd os-2024-kerop-os`
-3. Make run
-  `make run`  
-
+3. Make 
+```
+make start
+make run 
+```
 ## Acknowledgements
 1. Tuhan Yang Maha Esa
 2. Dosen Sistem Operasi
